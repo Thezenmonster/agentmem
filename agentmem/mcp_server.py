@@ -107,6 +107,26 @@ def run_server(db_path: str = "./memory.db", project: str = ""):
                     },
                 },
             ),
+            Tool(
+                name="save_session",
+                description="Save current session state before conversation ends or context compresses. Capture: what's in progress, what's blocked, what's done, decisions made. The next agent instance loads this automatically.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string", "description": "Full session state: in-progress work, blocked items, completed items, key decisions"},
+                        "tags": {"type": "array", "items": {"type": "string"}, "default": ["session", "state"]},
+                    },
+                    "required": ["summary"],
+                },
+            ),
+            Tool(
+                name="load_session",
+                description="Load the most recent session state. Call this at the start of a conversation to pick up where the last instance left off.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {},
+                },
+            ),
         ]
 
     @server.call_tool()
@@ -165,6 +185,19 @@ def run_server(db_path: str = "./memory.db", project: str = ""):
                 return [TextContent(type="text", text="No memories found.")]
             lines = [f"[{r.type}] {r.title} (id: {r.id})" for r in records]
             return [TextContent(type="text", text="\n".join(lines))]
+
+        elif name == "save_session":
+            record = mem.save_session(
+                summary=arguments["summary"],
+                tags=arguments.get("tags", ["session", "state"]),
+            )
+            return [TextContent(type="text", text=f"Session saved: {record.id}\n{record.content[:200]}...")]
+
+        elif name == "load_session":
+            record = mem.load_session()
+            if record:
+                return [TextContent(type="text", text=f"Last session ({record.created_at}):\n\n{record.content}")]
+            return [TextContent(type="text", text="No previous session found.")]
 
         return [TextContent(type="text", text=f"Unknown tool: {name}")]
 

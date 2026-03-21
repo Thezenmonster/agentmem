@@ -187,6 +187,31 @@ def stats(ctx):
     mem.close()
 
 
+@main.command("save-session")
+@click.argument("summary")
+@click.pass_context
+def save_session(ctx, summary):
+    """Save session state for the next agent instance."""
+    mem = _get_mem(ctx)
+    record = mem.save_session(summary)
+    click.echo(f"Session saved: {record.id}")
+    mem.close()
+
+
+@main.command("load-session")
+@click.pass_context
+def load_session(ctx):
+    """Load the most recent session state."""
+    mem = _get_mem(ctx)
+    record = mem.load_session()
+    if record:
+        click.echo(f"Last session ({record.created_at}):\n")
+        click.echo(record.content)
+    else:
+        click.echo("No previous session found.")
+    mem.close()
+
+
 @main.command()
 @click.pass_context
 def serve(ctx):

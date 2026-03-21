@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-MEMORY_TYPES = ("setting", "bug", "decision", "procedure", "context", "feedback")
+MEMORY_TYPES = ("setting", "bug", "decision", "procedure", "context", "feedback", "session")
 
 
 @dataclass

@@ -203,6 +203,51 @@ class Memory:
             "db_size_kb": round(db_size / 1024, 1),
         }
 
+    def save_session(self, summary: str, tags: list[str] | None = None) -> MemoryRecord:
+        """Save current session state. Supersedes any previous session for this project.
+
+        Call this before a conversation ends or when context is about to compress.
+        The summary should capture: what's in progress, what's blocked, what's done,
+        and any decisions made this session.
+        """
+        # Find and supersede the previous session
+        prev = self._conn.execute(
+            "SELECT id FROM memories WHERE type = 'session' AND project = ? "
+            "ORDER BY created_at DESC LIMIT 1",
+            (self.project,),
+        ).fetchone()
+
+        supersedes = prev["id"] if prev else ""
+
+        return self.add(
+            type="session",
+            title=f"Session state — {self.project or 'default'}",
+            content=summary,
+            tags=tags or ["session", "state"],
+            source="session",
+            supersedes=supersedes,
+        )
+
+    def load_session(self) -> MemoryRecord | None:
+        """Load the most recent session state for this project.
+
+        Call this at the start of a conversation to pick up where the last instance left off.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM memories WHERE type = 'session' AND project = ? "
+            "ORDER BY created_at DESC LIMIT 1",
+            (self.project,),
+        ).fetchone()
+        if not row:
+            return None
+
+        self._conn.execute(
+            "UPDATE memories SET accessed_at = ?, access_count = access_count + 1 WHERE id = ?",
+            (_now(), row["id"]),
+        )
+        self._conn.commit()
+        return _row_to_record(row)
+
     def close(self):
         self._conn.close()
 
