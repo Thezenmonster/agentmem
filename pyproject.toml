@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentmem"
+version = "0.1.0"
+description = "Production-ready agent memory. SQLite + FTS5. No infrastructure."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Michael Onyek" }]
+keywords = ["agent", "memory", "llm", "ai", "mcp", "sqlite", "fts5"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0"]
+vectors = ["sqlite-vec>=0.1"]
+tokens = ["tiktoken>=0.5"]
+all = ["mcp>=1.0", "sqlite-vec>=0.1", "tiktoken>=0.5"]
+dev = ["pytest>=7.0", "pytest-cov>=4.0"]
+
+[project.scripts]
+agentmem = "agentmem.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/thezenmonster/agentmem"
+Repository = "https://github.com/thezenmonster/agentmem"
+Issues = "https://github.com/thezenmonster/agentmem/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agentmem"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
