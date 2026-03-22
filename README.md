@@ -2,15 +2,15 @@
 
 Production-ready agent memory in one line. No vector DB. No infrastructure. Just SQLite.
 
-[![PyPI](https://img.shields.io/pypi/v/agentmem)](https://pypi.org/project/agentmem/)
-[![Python](https://img.shields.io/pypi/pyversions/agentmem)](https://pypi.org/project/agentmem/)
+[![PyPI](https://img.shields.io/pypi/v/quilmem)](https://pypi.org/project/quilmem/)
+[![Python](https://img.shields.io/pypi/pyversions/quilmem)](https://pypi.org/project/quilmem/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://github.com/thezenmonster/agentmem/actions/workflows/ci.yml/badge.svg)](https://github.com/thezenmonster/agentmem/actions)
 
 ## Install
 
 ```bash
-pip install agentmem
+pip install quilmem
 ```
 
 ## 30-Second Demo
@@ -45,7 +45,7 @@ Current solutions are either too heavy (vector databases, API keys, cloud servic
 
 | Feature | Mem0 | Engram | MCP Memory | agentmem |
 |---|---|---|---|---|
-| `pip install`, done | Needs API key or vector DB | Go binary | npm package | **Yes** |
+| `pip install quilmem` | Needs API key or vector DB | Go binary | npm package | **Yes** |
 | Typed memories | Blob store | Key-value | Entities/relations | **6 types** |
 | Python API | Yes | Go only | Node.js | **Yes** |
 | Full-text search | Vector-based | FTS5 | No search | **FTS5** |
@@ -116,7 +116,7 @@ agentmem serve
 agentmem includes a built-in [Model Context Protocol](https://modelcontextprotocol.io/) server. Connect it to Claude Desktop, Cursor, or any MCP client.
 
 ```bash
-pip install agentmem[mcp]
+pip install quilmem[mcp]
 ```
 
 **Claude Desktop config** (`claude_desktop_config.json`):
@@ -225,7 +225,7 @@ agent_b.search("bug")  # Only returns backend bugs
 - **Token counting:** Defaults to `len(text) // 4` estimate. Install `tiktoken` for accuracy:
 
 ```bash
-pip install agentmem[tokens]
+pip install quilmem[tokens]
 ```
 
 ```python

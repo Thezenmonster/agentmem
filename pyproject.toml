@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agentmem"
+name = "quilmem"
 version = "0.1.0"
 description = "Production-ready agent memory. SQLite + FTS5. No infrastructure."
 readme = "README.md"
