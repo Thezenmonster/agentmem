@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>agentmem — Governed Memory for Coding Agents</title>
+    <meta name="description" content="Your coding agent stops forgetting, stops repeating mistakes, and knows what's still true. Governed memory with trust, provenance, and conflict detection.">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --red: #f85149;
+            --yellow: #d29922;
+            --code-bg: #0d1117;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+
+        /* Hero */
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+        .hero h1 span { color: var(--accent); }
+        .hero .subtitle {
+            font-size: 1.25em;
+            color: var(--muted);
+            max-width: 600px;
+            margin: 0 auto 32px;
+        }
+        .hero .install {
+            display: inline-block;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 1.1em;
+            color: var(--green);
+            margin-bottom: 16px;
+        }
+        .cta-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: var(--accent); color: var(--bg); }
+        .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+        /* Problem */
+        .problem {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+        }
+        .problem h2 {
+            font-size: 1.75em;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .problem-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 24px;
+        }
+        @media (max-width: 600px) { .problem-grid { grid-template-columns: 1fr; } }
+        .problem-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .problem-card .icon { font-size: 1.5em; margin-bottom: 8px; }
+        .problem-card h3 { font-size: 1em; margin-bottom: 4px; }
+        .problem-card p { color: var(--muted); font-size: 0.9em; }
+
+        /* Solution */
+        .solution {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+        }
+        .solution h2 {
+            font-size: 1.75em;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .solution .lead {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 32px;
+        }
+        .lifecycle {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.95em;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .lifecycle .arrow { color: var(--muted); }
+        .lifecycle .status-hyp { color: var(--yellow); }
+        .lifecycle .status-act { color: var(--text); }
+        .lifecycle .status-val { color: var(--green); }
+        .lifecycle .status-dep { color: var(--red); }
+
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 600px) { .features { grid-template-columns: 1fr; } }
+        .feature {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .feature h3 { font-size: 1em; margin-bottom: 4px; color: var(--accent); }
+        .feature p { color: var(--muted); font-size: 0.9em; }
+
+        /* Code demo */
+        .demo {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+        }
+        .demo h2 { font-size: 1.75em; margin-bottom: 24px; text-align: center; }
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+        .comment { color: var(--muted); }
+        .string { color: #a5d6ff; }
+        .keyword { color: #ff7b72; }
+        .number { color: #79c0ff; }
+
+        /* Proof */
+        .proof {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+        .proof h2 { font-size: 1.75em; margin-bottom: 24px; }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 600px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+        .stat {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .stat .num { font-size: 2em; font-weight: 700; color: var(--accent); }
+        .stat .label { color: var(--muted); font-size: 0.85em; }
+
+        /* Compare */
+        .compare {
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+        }
+        .compare h2 { font-size: 1.75em; margin-bottom: 24px; text-align: center; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        th, td {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+        th { background: var(--surface); color: var(--muted); font-weight: 600; }
+        td:first-child { font-weight: 600; }
+        .yes { color: var(--green); }
+        .no { color: var(--muted); }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.85em;
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Hero -->
+    <section class="hero">
+        <h1>Governed memory for<br><span>coding agents</span></h1>
+        <p class="subtitle">
+            Your agent should know what is true, what changed, and what to ignore.
+        </p>
+        <div class="install">pip install quilmem</div>
+        <div class="cta-group">
+            <a href="https://github.com/Thezenmonster/agentmem" class="btn btn-primary">View on GitHub</a>
+            <a href="quickstart.html" class="btn btn-secondary">5-Minute Quickstart</a>
+        </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="problem">
+        <h2>The problem with AI memory</h2>
+        <p style="text-align:center; color:var(--muted); margin-bottom:24px;">
+            Your coding assistant forgets everything between sessions.<br>
+            Most memory tools solve storage. None of them solve trust.
+        </p>
+        <div class="problem-grid">
+            <div class="problem-card">
+                <div class="icon">&#x1f504;</div>
+                <h3>Repeats old mistakes</h3>
+                <p>Fixed a bug last week? Your agent doesn't remember. Same error, same fix, every session.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon">&#x1f4a5;</div>
+                <h3>Contradicts itself</h3>
+                <p>Old rule says "always do X." New rule says "never do X." The agent sees both and picks randomly.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon">&#x1f4ad;</div>
+                <h3>Context collapse</h3>
+                <p>Long conversation compresses. Your agent loses the project map, the decisions, the preferences.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon">&#x2753;</div>
+                <h3>No source of truth</h3>
+                <p>Is that memory from yesterday or last month? Is it still valid? Nobody knows. Not even the agent.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution -->
+    <section class="solution">
+        <h2>Memory with governance</h2>
+        <p class="lead">
+            Every memory has a status. Your agent knows what to trust.
+        </p>
+        <div class="lifecycle">
+            <span class="status-hyp">hypothesis</span>
+            <span class="arrow"> &rarr; </span>
+            <span class="status-act">active</span>
+            <span class="arrow"> &rarr; </span>
+            <span class="status-val">validated</span>
+            <br><br>
+            <span class="status-dep">deprecated</span>
+            <span class="arrow"> &bull; </span>
+            <span class="status-dep">superseded</span>
+            <span class="arrow"> &mdash; excluded from recall</span>
+        </div>
+        <div class="features">
+            <div class="feature">
+                <h3>Trust-ranked recall</h3>
+                <p>Validated memories rank above hypotheses. Deprecated ones are excluded entirely.</p>
+            </div>
+            <div class="feature">
+                <h3>Conflict detection</h3>
+                <p>Finds contradictions between active memories. Separates real conflicts from duplicates.</p>
+            </div>
+            <div class="feature">
+                <h3>Staleness detection</h3>
+                <p>Flags memories when source files change, go missing, or haven't been updated.</p>
+            </div>
+            <div class="feature">
+                <h3>Provenance tracking</h3>
+                <p>Every memory knows where it came from: source file, section, content hash.</p>
+            </div>
+            <div class="feature">
+                <h3>Health scoring</h3>
+                <p>Scores your memory system 0-100. Know exactly how trustworthy your agent's knowledge is.</p>
+            </div>
+            <div class="feature">
+                <h3>Local-first</h3>
+                <p>No cloud, no API keys, no vector DB. Just SQLite. Your data stays on your machine.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo -->
+    <section class="demo">
+        <h2>See it work</h2>
+<pre><span class="comment"># Store memories with trust levels</span>
+mem.add(type=<span class="string">"decision"</span>, title=<span class="string">"Use per-track volume"</span>,
+        content=<span class="string">"Never apply loudnorm to voice."</span>,
+        status=<span class="string">"validated"</span>)
+
+<span class="comment"># Recall only returns what's trustworthy</span>
+context = mem.recall(<span class="string">"audio processing"</span>, max_tokens=<span class="number">2000</span>)
+
+<span class="comment"># Find contradictions</span>
+conflicts = detect_conflicts(mem._conn)
+<span class="comment"># !! "Always apply loudnorm" vs "Never apply loudnorm"</span>
+
+<span class="comment"># Check system health</span>
+report = health_check(mem._conn)
+<span class="comment"># Health: 85/100 | Conflicts: 1 | Stale: 0</span>
+
+<span class="comment"># Lifecycle management</span>
+mem.promote(record.id)                   <span class="comment"># hypothesis -> active -> validated</span>
+mem.deprecate(old.id, reason=<span class="string">"Disproven"</span>)
+mem.supersede(old.id, new.id)            <span class="comment"># old points to replacement</span></pre>
+    </section>
+
+    <!-- Proof -->
+    <section class="proof">
+        <h2>Battle-tested in production</h2>
+        <div class="stat-grid">
+            <div class="stat">
+                <div class="num">65+</div>
+                <div class="label">Videos produced</div>
+            </div>
+            <div class="stat">
+                <div class="num">330+</div>
+                <div class="label">Governed memories</div>
+            </div>
+            <div class="stat">
+                <div class="num">0</div>
+                <div class="label">Repeated bugs</div>
+            </div>
+            <div class="stat">
+                <div class="num">66</div>
+                <div class="label">Tests passing</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison -->
+    <section class="compare">
+        <h2>How it compares</h2>
+        <table>
+            <tr>
+                <th></th>
+                <th>Mem0</th>
+                <th>Letta</th>
+                <th>Mengram</th>
+                <th>agentmem</th>
+            </tr>
+            <tr>
+                <td>Memory lifecycle states</td>
+                <td class="no">No</td>
+                <td class="no">Partial</td>
+                <td class="no">No</td>
+                <td class="yes">5 states</td>
+            </tr>
+            <tr>
+                <td>Conflict detection</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="no">Partial</td>
+                <td class="yes">Built-in</td>
+            </tr>
+            <tr>
+                <td>Staleness detection</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="yes">Built-in</td>
+            </tr>
+            <tr>
+                <td>Provenance tracking</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="yes">source + hash</td>
+            </tr>
+            <tr>
+                <td>Trust-ranked recall</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="yes">Status-weighted</td>
+            </tr>
+            <tr>
+                <td>Health scoring</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="yes">0-100 score</td>
+            </tr>
+            <tr>
+                <td>Local-first</td>
+                <td class="no">Cloud</td>
+                <td class="no">Self-host</td>
+                <td class="yes">Yes</td>
+                <td class="yes">Always</td>
+            </tr>
+            <tr>
+                <td>MCP server</td>
+                <td class="no">Separate</td>
+                <td class="no">Separate</td>
+                <td class="yes">Yes</td>
+                <td class="yes">13 tools</td>
+            </tr>
+        </table>
+    </section>
+
+</div>
+
+<footer>
+    <div class="container">
+        <p>
+            <a href="https://github.com/Thezenmonster/agentmem">GitHub</a> &middot;
+            <a href="https://pypi.org/project/quilmem/">PyPI</a> &middot;
+            <a href="quickstart.html">Quickstart</a> &middot;
+            MIT License
+        </p>
+        <p style="margin-top:8px;">Built by <a href="https://github.com/Thezenmonster">Michael Onyek</a></p>
+    </div>
+</footer>
+
+</body>
+</html>
