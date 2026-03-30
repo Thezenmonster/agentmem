@@ -8,7 +8,7 @@ import sys
 import click
 
 from .core import Memory
-from .models import MEMORY_TYPES
+from .models import MEMORY_TYPES, MEMORY_STATUSES
 
 
 def _get_mem(ctx: click.Context) -> Memory:
@@ -209,6 +209,128 @@ def load_session(ctx):
         click.echo(record.content)
     else:
         click.echo("No previous session found.")
+    mem.close()
+
+
+@main.command()
+@click.argument("id")
+@click.pass_context
+def promote(ctx, id):
+    """Promote a memory: hypothesis → active → validated."""
+    mem = _get_mem(ctx)
+    record = mem.promote(id)
+    if record:
+        click.echo(f"Promoted: {record.id} -> {record.status}")
+        click.echo(f"  [{record.type}] {record.title}")
+    else:
+        click.echo(f"Not found: {id}", err=True)
+        sys.exit(1)
+    mem.close()
+
+
+@main.command()
+@click.argument("id")
+@click.option("--reason", default="", help="Why this memory is deprecated.")
+@click.pass_context
+def deprecate(ctx, id, reason):
+    """Mark a memory as deprecated. Excluded from recall, kept for history."""
+    mem = _get_mem(ctx)
+    record = mem.deprecate(id, reason=reason)
+    if record:
+        click.echo(f"Deprecated: {record.id}")
+        click.echo(f"  [{record.type}] {record.title}")
+        if reason:
+            click.echo(f"  Reason: {reason}")
+    else:
+        click.echo(f"Not found: {id}", err=True)
+        sys.exit(1)
+    mem.close()
+
+
+@main.command()
+@click.pass_context
+def conflicts(ctx):
+    """Detect contradictions between active memories."""
+    from .governance import detect_conflicts
+    mem = _get_mem(ctx)
+    found = detect_conflicts(mem._conn, project=ctx.obj.get("project", ""))
+
+    if not found:
+        click.echo("No conflicts detected.")
+    else:
+        click.echo(f"Found {len(found)} potential conflict(s):\n")
+        for i, c in enumerate(found, 1):
+            icon = "!!" if c.severity == "critical" else "?"
+            click.echo(f"  {icon} Conflict {i} ({c.severity})")
+            click.echo(f"    A: [{c.memory_a.type}] {c.memory_a.title}")
+            click.echo(f"       id: {c.memory_a.id}  status: {c.memory_a.status}")
+            click.echo(f"    B: [{c.memory_b.type}] {c.memory_b.title}")
+            click.echo(f"       id: {c.memory_b.id}  status: {c.memory_b.status}")
+            click.echo(f"    Reason: {c.reason}")
+            click.echo()
+    mem.close()
+
+
+@main.command()
+@click.option("--days", default=30, help="Days without update to consider stale.")
+@click.pass_context
+def stale(ctx, days):
+    """Find memories that may be outdated."""
+    from .governance import detect_stale
+    mem = _get_mem(ctx)
+    found = detect_stale(mem._conn, project=ctx.obj.get("project", ""), stale_days=days)
+
+    if not found:
+        click.echo(f"No stale memories (threshold: {days} days).")
+    else:
+        click.echo(f"Found {len(found)} stale memory/memories (>{days} days):\n")
+        for s in found:
+            click.echo(f"  [{s.memory.type}] {s.memory.title}")
+            click.echo(f"    id: {s.memory.id}  status: {s.memory.status}")
+            click.echo(f"    Last updated: {s.days_since_update} days ago")
+            click.echo(f"    Reason: {s.reason}")
+            click.echo()
+    mem.close()
+
+
+@main.command()
+@click.option("--days", default=30, help="Stale threshold in days.")
+@click.pass_context
+def health(ctx, days):
+    """Run a full health check on the memory system."""
+    from .governance import health_check
+    mem = _get_mem(ctx)
+    report = health_check(mem._conn, project=ctx.obj.get("project", ""), stale_days=days)
+
+    click.echo(f"{'=' * 50}")
+    click.echo(f"MEMORY HEALTH: {report.health_score:.0f}/100")
+    click.echo(f"{'=' * 50}")
+    click.echo(f"  Total memories: {report.total_memories}")
+    click.echo(f"  By status:")
+    for status in ("validated", "active", "hypothesis", "deprecated", "superseded"):
+        count = report.by_status.get(status, 0)
+        if count:
+            click.echo(f"    {status}: {count}")
+    click.echo(f"  Never accessed: {report.never_accessed}")
+    click.echo()
+
+    if report.conflicts:
+        click.echo(f"  CONFLICTS: {len(report.conflicts)}")
+        for c in report.conflicts:
+            icon = "!!" if c.severity == "critical" else "?"
+            click.echo(f"    {icon} {c.memory_a.title[:40]} vs {c.memory_b.title[:40]}")
+
+    if report.stale:
+        click.echo(f"  STALE: {len(report.stale)}")
+        for s in report.stale[:5]:
+            click.echo(f"    {s.memory.title[:50]} ({s.days_since_update}d)")
+        if len(report.stale) > 5:
+            click.echo(f"    ... and {len(report.stale) - 5} more")
+
+    if report.orphaned_supersedes:
+        click.echo(f"  ORPHANED: {len(report.orphaned_supersedes)}")
+
+    click.echo(f"\n{'=' * 50}")
     mem.close()
 
 

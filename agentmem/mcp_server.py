@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 from .core import Memory
-from .models import MEMORY_TYPES
+from .models import MEMORY_TYPES, MEMORY_STATUSES
 
 _mem: Memory | None = None
 
@@ -127,6 +127,59 @@ def run_server(db_path: str = "./memory.db", project: str = ""):
                     "properties": {},
                 },
             ),
+            Tool(
+                name="promote_memory",
+                description="Promote a memory's trust level: hypothesis -> active -> validated. Use when evidence confirms a memory is true.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string", "description": "Memory ID to promote"},
+                    },
+                    "required": ["id"],
+                },
+            ),
+            Tool(
+                name="deprecate_memory",
+                description="Mark a memory as deprecated. It will be excluded from search/recall but kept for history. Use when a rule or fact is no longer true.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string", "description": "Memory ID to deprecate"},
+                        "reason": {"type": "string", "description": "Why this memory is no longer true", "default": ""},
+                    },
+                    "required": ["id"],
+                },
+            ),
+            Tool(
+                name="supersede_memory",
+                description="Replace an old memory with a new one. Old memory is marked superseded and linked to the replacement.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "old_id": {"type": "string", "description": "Memory ID being replaced"},
+                        "new_id": {"type": "string", "description": "Memory ID of the replacement"},
+                    },
+                    "required": ["old_id", "new_id"],
+                },
+            ),
+            Tool(
+                name="memory_health",
+                description="Run a health check on the memory system. Returns: score (0-100), conflict count, stale count, status distribution. Use to audit memory quality.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "stale_days": {"type": "integer", "default": 30, "description": "Days without update to consider stale"},
+                    },
+                },
+            ),
+            Tool(
+                name="memory_conflicts",
+                description="Detect contradictions between active memories. Returns pairs of memories that assert and negate the same topic.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {},
+                },
+            ),
         ]
 
     @server.call_tool()
@@ -198,6 +251,52 @@ def run_server(db_path: str = "./memory.db", project: str = ""):
             if record:
                 return [TextContent(type="text", text=f"Last session ({record.created_at}):\n\n{record.content}")]
             return [TextContent(type="text", text="No previous session found.")]
+
+        elif name == "promote_memory":
+            record = mem.promote(arguments["id"])
+            if record:
+                return [TextContent(type="text", text=f"Promoted: {record.id} -> {record.status}\n[{record.type}] {record.title}")]
+            return [TextContent(type="text", text=f"Not found: {arguments['id']}")]
+
+        elif name == "deprecate_memory":
+            record = mem.deprecate(arguments["id"], reason=arguments.get("reason", ""))
+            if record:
+                return [TextContent(type="text", text=f"Deprecated: {record.id}\n[{record.type}] {record.title}")]
+            return [TextContent(type="text", text=f"Not found: {arguments['id']}")]
+
+        elif name == "supersede_memory":
+            old, new = mem.supersede(arguments["old_id"], arguments["new_id"])
+            if old and new:
+                return [TextContent(type="text", text=f"Superseded: {old.title} -> {new.title}\nOld: {old.id} (superseded)\nNew: {new.id} (active)")]
+            return [TextContent(type="text", text="One or both memory IDs not found.")]
+
+        elif name == "memory_health":
+            from .governance import health_check
+            report = health_check(mem._conn, project=mem.project, stale_days=arguments.get("stale_days", 30))
+            lines = [
+                f"Memory Health: {report.health_score:.0f}/100",
+                f"Total: {report.total_memories}",
+                f"By status: {report.by_status}",
+                f"Conflicts: {len(report.conflicts)}",
+                f"Stale: {len(report.stale)}",
+                f"Never accessed: {report.never_accessed}",
+            ]
+            if report.conflicts:
+                lines.append("\nTop conflicts:")
+                for c in report.conflicts[:5]:
+                    lines.append(f"  {'!!' if c.severity == 'critical' else '?'} {c.memory_a.title[:40]} vs {c.memory_b.title[:40]}")
+            return [TextContent(type="text", text="\n".join(lines))]
+
+        elif name == "memory_conflicts":
+            from .governance import detect_conflicts
+            found = detect_conflicts(mem._conn, project=mem.project)
+            if not found:
+                return [TextContent(type="text", text="No conflicts detected.")]
+            lines = [f"Found {len(found)} conflict(s):"]
+            for c in found:
+                icon = "!!" if c.severity == "critical" else "?"
+                lines.append(f"\n{icon} [{c.memory_a.type}] {c.memory_a.title}\n   vs [{c.memory_b.type}] {c.memory_b.title}\n   {c.reason}")
+            return [TextContent(type="text", text="\n".join(lines))]
 
         return [TextContent(type="text", text=f"Unknown tool: {name}")]
 

@@ -7,12 +7,20 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .models import MEMORY_TYPES, MemoryRecord
+from .models import MEMORY_TYPES, MEMORY_STATUSES, MemoryRecord
 from .schema import init_db
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _safe_get(row, key, default=""):
+    """Safely get a column value, returning default if column doesn't exist."""
+    try:
+        return row[key]
+    except (IndexError, KeyError):
+        return default
 
 
 def _row_to_record(row: sqlite3.Row, rank: float | None = None) -> MemoryRecord:
@@ -26,6 +34,13 @@ def _row_to_record(row: sqlite3.Row, rank: float | None = None) -> MemoryRecord:
         project=row["project"],
         confidence=row["confidence"],
         supersedes=row["supersedes"],
+        status=_safe_get(row, "status", "active"),
+        source_path=_safe_get(row, "source_path", ""),
+        source_section=_safe_get(row, "source_section", ""),
+        source_hash=_safe_get(row, "source_hash", ""),
+        validated_at=_safe_get(row, "validated_at", ""),
+        deprecated_at=_safe_get(row, "deprecated_at", ""),
+        superseded_by=_safe_get(row, "superseded_by", ""),
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         accessed_at=row["accessed_at"],
@@ -67,22 +82,32 @@ class Memory:
         project: str | None = None,
         confidence: float = 1.0,
         supersedes: str = "",
+        status: str = "active",
+        source_path: str = "",
+        source_section: str = "",
+        source_hash: str = "",
     ) -> MemoryRecord:
         if type not in MEMORY_TYPES:
             raise ValueError(f"Invalid type '{type}'. Must be one of: {MEMORY_TYPES}")
+        if status not in MEMORY_STATUSES:
+            raise ValueError(f"Invalid status '{status}'. Must be one of: {MEMORY_STATUSES}")
 
         record_id = str(uuid.uuid4())
         now = _now()
         tags_str = ",".join(tags) if tags else ""
         proj = project if project is not None else self.project
+        validated_at = now if status == "validated" else ""
 
         self._conn.execute(
             """INSERT INTO memories
                (id, type, title, content, tags, source, project, confidence,
-                supersedes, created_at, updated_at, accessed_at, access_count)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+                supersedes, status, source_path, source_section, source_hash,
+                validated_at, deprecated_at, superseded_by,
+                created_at, updated_at, accessed_at, access_count)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, 0)""",
             (record_id, type, title, content, tags_str, source, proj,
-             confidence, supersedes, now, now, now),
+             confidence, supersedes, status, source_path, source_section,
+             source_hash, validated_at, now, now, now),
         )
         self._conn.commit()
 
@@ -90,6 +115,9 @@ class Memory:
             id=record_id, type=type, title=title, content=content,
             tags=tags or [], source=source, project=proj,
             confidence=confidence, supersedes=supersedes,
+            status=status, source_path=source_path,
+            source_section=source_section, source_hash=source_hash,
+            validated_at=validated_at,
             created_at=now, updated_at=now, accessed_at=now, access_count=0,
         )
 
@@ -112,7 +140,9 @@ class Memory:
         if not record:
             return None
 
-        allowed = {"title", "content", "tags", "type", "confidence", "project", "supersedes"}
+        allowed = {"title", "content", "tags", "type", "confidence", "project",
+                    "supersedes", "status", "source_path", "source_section",
+                    "source_hash", "validated_at", "deprecated_at", "superseded_by"}
         updates = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
         if not updates:
             return record
@@ -121,6 +151,8 @@ class Memory:
             updates["tags"] = ",".join(updates["tags"])
         if "type" in updates and updates["type"] not in MEMORY_TYPES:
             raise ValueError(f"Invalid type '{updates['type']}'. Must be one of: {MEMORY_TYPES}")
+        if "status" in updates and updates["status"] not in MEMORY_STATUSES:
+            raise ValueError(f"Invalid status '{updates['status']}'. Must be one of: {MEMORY_STATUSES}")
 
         updates["updated_at"] = _now()
         set_clause = ", ".join(f"{k} = ?" for k in updates)
@@ -129,6 +161,70 @@ class Memory:
         self._conn.execute(f"UPDATE memories SET {set_clause} WHERE id = ?", values)
         self._conn.commit()
         return self.get(id)
+
+    # ── Truth governance lifecycle ──────────────────────────────────
+
+    def promote(self, id: str) -> MemoryRecord | None:
+        """Promote a memory: hypothesis → active → validated.
+        Each call advances one step. Validated is the highest trust level."""
+        record = self.get(id)
+        if not record:
+            return None
+
+        promotions = {"hypothesis": "active", "active": "validated"}
+        next_status = promotions.get(record.status)
+        if not next_status:
+            return record  # Already validated or in a terminal state
+
+        now = _now()
+        updates = {"status": next_status, "updated_at": now}
+        if next_status == "validated":
+            updates["validated_at"] = now
+
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        values = list(updates.values()) + [id]
+        self._conn.execute(f"UPDATE memories SET {set_clause} WHERE id = ?", values)
+        self._conn.commit()
+        return self.get(id)
+
+    def deprecate(self, id: str, reason: str = "") -> MemoryRecord | None:
+        """Mark a memory as deprecated. Excluded from recall, kept for history."""
+        record = self.get(id)
+        if not record:
+            return None
+
+        now = _now()
+        content = record.content
+        if reason:
+            content = f"{content}\n\n[DEPRECATED {now[:10]}] {reason}"
+
+        self._conn.execute(
+            "UPDATE memories SET status = 'deprecated', deprecated_at = ?, "
+            "content = ?, updated_at = ? WHERE id = ?",
+            (now, content, now, id),
+        )
+        self._conn.commit()
+        return self.get(id)
+
+    def supersede(self, old_id: str, new_id: str) -> tuple[MemoryRecord | None, MemoryRecord | None]:
+        """Mark old_id as superseded by new_id. Old memory points to replacement."""
+        old = self.get(old_id)
+        new = self.get(new_id)
+        if not old or not new:
+            return (old, new)
+
+        now = _now()
+        self._conn.execute(
+            "UPDATE memories SET status = 'superseded', superseded_by = ?, "
+            "deprecated_at = ?, updated_at = ? WHERE id = ?",
+            (new_id, now, now, old_id),
+        )
+        self._conn.execute(
+            "UPDATE memories SET supersedes = ?, updated_at = ? WHERE id = ?",
+            (old_id, now, new_id),
+        )
+        self._conn.commit()
+        return (self.get(old_id), self.get(new_id))
 
     def delete(self, id: str) -> bool:
         cur = self._conn.execute("DELETE FROM memories WHERE id = ?", (id,))
@@ -210,23 +306,31 @@ class Memory:
         The summary should capture: what's in progress, what's blocked, what's done,
         and any decisions made this session.
         """
-        # Find and supersede the previous session
+        # Find previous active session
         prev = self._conn.execute(
             "SELECT id FROM memories WHERE type = 'session' AND project = ? "
+            "AND COALESCE(status, 'active') = 'active' "
             "ORDER BY created_at DESC LIMIT 1",
             (self.project,),
         ).fetchone()
 
-        supersedes = prev["id"] if prev else ""
+        prev_id = prev["id"] if prev else ""
 
-        return self.add(
+        # Create new session
+        new_record = self.add(
             type="session",
             title=f"Session state — {self.project or 'default'}",
             content=summary,
             tags=tags or ["session", "state"],
             source="session",
-            supersedes=supersedes,
+            supersedes=prev_id,
         )
+
+        # Actually supersede the old session using the governance lifecycle
+        if prev_id:
+            self.supersede(prev_id, new_record.id)
+
+        return new_record
 
     def load_session(self) -> MemoryRecord | None:
         """Load the most recent session state for this project.

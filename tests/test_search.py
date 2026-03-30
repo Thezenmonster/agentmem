@@ -82,15 +82,18 @@ def test_recall_empty_query(mem):
     assert context == "" or isinstance(context, str)
 
 
-def test_search_bumps_access_count(mem):
+def test_search_does_not_bump_access_count(mem):
+    """Search should NOT bump access_count — prevents self-reinforcing popularity bias.
+    Only explicit get() or confirmed use should increment access."""
     results = mem.search("loudnorm")
     assert len(results) > 0
     record_id = results[0].id
 
-    # Search again — access count should increase
+    # Search again — access count should NOT increase from search alone
     mem.search("loudnorm")
     record = mem.get(record_id)
-    assert record.access_count >= 2  # searched twice + get
+    # get() itself bumps by 1, but the two searches should add 0
+    assert record.access_count <= 1
 
 
 def test_recall_markdown_format(mem):

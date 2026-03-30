@@ -1,11 +1,17 @@
 # agentmem
 
-Production-ready agent memory in one line. No vector DB. No infrastructure. Just SQLite.
+Governed memory for long-lived coding agents. Your agent stops forgetting, stops repeating mistakes, and knows what's still true.
 
 [![PyPI](https://img.shields.io/pypi/v/quilmem)](https://pypi.org/project/quilmem/)
 [![Python](https://img.shields.io/pypi/pyversions/quilmem)](https://pypi.org/project/quilmem/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://github.com/thezenmonster/agentmem/actions/workflows/ci.yml/badge.svg)](https://github.com/thezenmonster/agentmem/actions)
+
+## The Problem
+
+Your AI coding assistant forgets everything between sessions. It repeats old mistakes. It can't tell current rules from outdated ones. Context compresses and recovery is painful.
+
+Most memory tools solve **storage**. agentmem solves **trust**.
 
 ## Install
 
@@ -13,261 +19,276 @@ Production-ready agent memory in one line. No vector DB. No infrastructure. Just
 pip install quilmem
 ```
 
-## 30-Second Demo
+## 60-Second Demo
 
 ```python
 from agentmem import Memory
 
 mem = Memory()
 
-# Store memories by type
-mem.add(type="bug", title="loudnorm undoes SFX reductions",
-        content="Never apply loudnorm to final amix output. It lifts noise floor.")
+# Store typed memories
+mem.add(type="bug", title="loudnorm undoes SFX levels",
+        content="Never apply loudnorm to final mix. It re-normalizes everything.",
+        status="validated")
 
-mem.add(type="setting", title="Voice speed config",
-        content="atempo 0.90 per-line then 1.15x global.",
-        tags=["voice", "audio"])
+mem.add(type="decision", title="Use per-line atempo",
+        content="Bake speed into per-line TTS. No global pass.",
+        status="active")
 
-# Full-text search (instant, FTS5-powered)
+# Something you're not sure about yet
+mem.add(type="decision", title="Maybe try 2-second gaps before CTA",
+        content="Hypothesis from last session. Needs testing.",
+        status="hypothesis")
+
+# Search — validated and active memories rank highest.
+# Deprecated and superseded memories are excluded automatically.
 results = mem.search("audio mixing")
 
-# Context-budgeted recall (the killer feature)
+# Context-budgeted recall — fits the best memories into your token limit
 context = mem.recall("building a narration track", max_tokens=2000)
-# Returns: formatted markdown of the most relevant memories,
-#          fitted to your token budget, ranked by relevance + recency
+
+# Lifecycle — promote what's proven, deprecate what's not
+mem.promote(record.id)                    # hypothesis -> active -> validated
+mem.deprecate(record.id, reason="Disproven by data")
+mem.supersede(old_id, new_id)             # old points to replacement
+
+# Health check — is your memory system trustworthy?
+from agentmem import health_check
+report = health_check(mem._conn)
+# Health: 85/100 | Conflicts: 0 | Stale: 2 | Validated: 14
 ```
 
-## Why agentmem?
+## What Makes This Different
 
-Every agent builder hits the same wall: your agent forgets everything between sessions.
+**Other memory tools store things.** agentmem knows what's still true.
 
-Current solutions are either too heavy (vector databases, API keys, cloud services) or too simple (flat files that don't scale). agentmem sits in the sweet spot:
-
-| Feature | Mem0 | Engram | MCP Memory | agentmem |
+| | Mem0 | Letta | Mengram | agentmem |
 |---|---|---|---|---|
-| `pip install quilmem` | Needs API key or vector DB | Go binary | npm package | **Yes** |
-| Typed memories | Blob store | Key-value | Entities/relations | **6 types** |
-| Python API | Yes | Go only | Node.js | **Yes** |
-| Full-text search | Vector-based | FTS5 | No search | **FTS5** |
-| MCP server | Separate setup | Built-in | Built-in | **Built-in** |
-| CLI | No | Yes | No | **Yes** |
-| Token budgeting | No | No | No | **Yes** |
-| Markdown import | No | No | No | **Yes** |
-| Zero infrastructure | No | Yes | Yes | **Yes** |
+| Memory storage | Yes | Yes | Yes | Yes |
+| Full-text search | Vector | Agent-driven | Knowledge graph | **FTS5** |
+| Memory lifecycle states | No | Partial | No | **hypothesis -> active -> validated -> deprecated -> superseded** |
+| Conflict detection | No | No | Partial | **Built-in** |
+| Staleness detection | No | No | No | **Built-in** |
+| Health scoring | No | No | No | **Built-in** |
+| Provenance tracking | No | No | No | **source_path + source_hash** |
+| Trust-ranked recall | No | No | No | **Validated > active > hypothesis** |
+| Human-readable source files | No | No | No | **Canonical markdown** |
+| Local-first, zero infrastructure | No | Self-host option | Self-host option | **Yes, always** |
+| MCP server | Separate | Separate | Yes | **Built-in** |
 
-## Three Interfaces, One Store
+## Truth Governance
+
+The core idea: every memory has a **status** that tracks how much you should trust it.
+
+```
+hypothesis    New observation. Not yet confirmed. Lowest trust in recall.
+    |
+  active      Default. Currently believed true. Normal trust.
+    |
+ validated    Explicitly confirmed. Highest trust in recall.
+
+ deprecated   Was true, no longer. Excluded from recall. Kept for history.
+ superseded   Replaced by a newer memory. Points to replacement.
+```
+
+**Why this matters:** Without governance, your agent's memory accumulates stale rules, contradictions, and outdated decisions. It doesn't know that the voice setting from January was overridden in March. It retrieves both and the LLM picks randomly. Governed memory solves this.
+
+## Conflict Detection
+
+```python
+from agentmem import detect_conflicts
+
+conflicts = detect_conflicts(mem._conn)
+# Found 2 conflict(s):
+#   !! [decision] "Always apply loudnorm to voice"
+#      vs [decision] "NEVER apply loudnorm to voice"
+#      Contradiction on shared topic (voice, loudnorm, audio)
+```
+
+agentmem finds memories that contradict each other:
+- Detects topic overlap (Jaccard similarity)
+- Separates **duplicates** from **contradictions**
+- Sentence-level negation matching (not just keyword scanning)
+- Severity: `critical` (both active) vs `warning` (one deprecated)
+
+## Staleness Detection
+
+```python
+from agentmem import detect_stale
+
+stale = detect_stale(mem._conn, stale_days=30)
+# [decision] "Use atempo 0.90" — Source changed since import (hash mismatch)
+# [bug] "Firewall blocks port" — Not updated in 45 days
+```
+
+Finds outdated memories by:
+- Age (not updated in N days)
+- Source file missing (referenced file was deleted)
+- Hash drift (source file content changed but memory wasn't updated)
+
+## Health Check
+
+```python
+from agentmem import health_check
+
+report = health_check(mem._conn)
+print(f"Health: {report.health_score}/100")
+print(f"Conflicts: {len(report.conflicts)}")
+print(f"Stale: {len(report.stale)}")
+```
+
+Scores your memory system 0-100 based on: conflicts, stale percentage, orphaned references, deprecated weight, and whether you have any validated memories.
+
+## Provenance-Aware Sync
+
+Sync canonical markdown files into the DB with source tracking:
+
+```python
+# Each memory tracks where it came from
+mem.add(type="bug", title="loudnorm lifts noise",
+        content="...",
+        source_path="/docs/errors.md",
+        source_section="Audio Bugs",
+        source_hash="a1b2c3d4e5f6")
+```
+
+The sync engine:
+- **Same hash = skip** (idempotent, re-running changes nothing)
+- **Different hash = update** (source file changed)
+- **Section removed = deprecate** (with reason)
+- **Section restored = resurrect** (reactivates deprecated memory)
+
+## Three Interfaces
 
 ### Python API
 
 ```python
 from agentmem import Memory
 
-mem = Memory("./my-agent.db")
-
-# Add
-record = mem.add(type="decision", title="Ban 3rd-person narration",
-                 content="Average 25 views. Every time, without exception.",
-                 tags=["scripting", "pov"])
-
-# Search
-results = mem.search("narration style")
-results = mem.search("audio", type="bug")
-results = mem.search("voice", tags=["speed"])
-
-# Recall (context-budgeted)
-context = mem.recall("preparing audio mix", max_tokens=3000)
+mem = Memory("./my-agent.db", project="frontend")
 
 # CRUD
+record = mem.add(type="decision", title="Use TypeScript", content="...")
 mem.get(record.id)
-mem.update(record.id, content="Updated: still banned.")
+mem.update(record.id, content="Updated reasoning.")
 mem.delete(record.id)
 mem.list(type="bug", limit=20)
 
-# Stats
-mem.stats()  # {"total": 142, "by_type": {"bug": 38, ...}, "db_size_kb": 340}
+# Search + recall
+results = mem.search("typescript migration", type="decision")
+context = mem.recall("setting up the build", max_tokens=3000)
+
+# Governance
+mem.promote(record.id)              # hypothesis -> active -> validated
+mem.deprecate(record.id, reason="No longer relevant")
+mem.supersede(old.id, new.id)       # links old to replacement
+
+# Session persistence
+mem.save_session("Working on auth refactor. Blocked on token refresh.")
+mem.load_session()                  # picks up where last instance left off
+
+# Health
+mem.stats()
 ```
 
 ### CLI
 
 ```bash
-# Add a memory
-agentmem add --type bug --title "loudnorm undoes SFX" "Never apply loudnorm to final output"
+# Core
+agentmem add --type bug --title "CSS grid issue" "Flexbox fallback needed"
+agentmem search "grid layout"
+agentmem recall "frontend styling" --tokens 2000
 
-# Search
-agentmem search "voice speed"
-agentmem search "audio" --type bug
+# Governance
+agentmem promote <id>
+agentmem deprecate <id> --reason "Fixed in v2.3"
+agentmem health
+agentmem conflicts
+agentmem stale --days 14
 
-# Context-budgeted recall
-agentmem recall "building narration track" --tokens 2000
+# Import + sessions
+agentmem import ./errors.md --type bug
+agentmem save-session "Finished auth module, starting tests"
+agentmem load-session
 
-# Import from markdown files
-agentmem import ./errors_and_fixes.md --type bug
-
-# List and manage
-agentmem list --type setting
-agentmem stats
-
-# Start MCP server
+# MCP server
 agentmem serve
 ```
 
 ### MCP Server
 
-agentmem includes a built-in [Model Context Protocol](https://modelcontextprotocol.io/) server. Connect it to Claude Desktop, Cursor, or any MCP client.
+Built-in [Model Context Protocol](https://modelcontextprotocol.io/) server for Claude Code, Cursor, and any MCP client.
 
 ```bash
 pip install quilmem[mcp]
 ```
 
-**Claude Desktop config** (`claude_desktop_config.json`):
+**Claude Code config** (`.claude/settings.json`):
 
 ```json
 {
   "mcpServers": {
     "agentmem": {
       "command": "agentmem",
-      "args": ["serve", "--db", "/path/to/memory.db"]
+      "args": ["--db", "./memory.db", "--project", "myproject", "serve"],
+      "type": "stdio"
     }
   }
 }
 ```
 
-**Available MCP tools:**
-- `add_memory` — Store a new typed memory
-- `search_memory` — Full-text search with filters
-- `recall_memory` — Context-budgeted retrieval
-- `update_memory` — Update by ID
-- `delete_memory` — Delete by ID
-- `list_memories` — List with optional type filter
+**MCP tools:** `add_memory`, `search_memory`, `recall_memory`, `update_memory`, `delete_memory`, `list_memories`, `save_session`, `load_session`, `promote_memory`, `deprecate_memory`, `supersede_memory`, `memory_health`, `memory_conflicts`
 
 ## Typed Memory
 
-Not a blob store. agentmem has six memory types that cover real agent workflows:
+Seven types that cover real agent workflows:
 
 | Type | What it stores | Example |
 |---|---|---|
-| `setting` | Configuration, parameters, profiles | "Voice speed: atempo 0.90" |
-| `bug` | Errors encountered and their fixes | "loudnorm lifts noise floor" |
-| `decision` | Rules, policies, architectural choices | "3rd-person narration is banned" |
-| `procedure` | Workflows, pipelines, sequences | "Voice chain: TTS → speed → 48kHz" |
-| `context` | Background knowledge, who/what/where | "Project uses FFmpeg + Python" |
-| `feedback` | User corrections and confirmations | "Michael: 'perfect, keep this setting'" |
+| `setting` | Configuration, parameters | "Voice speed: atempo 1.08" |
+| `bug` | Errors and their fixes | "loudnorm lifts noise floor" |
+| `decision` | Rules, policies, choices | "3rd-person narration banned" |
+| `procedure` | Workflows, pipelines | "TTS -> speed -> 48kHz -> mix" |
+| `context` | Background knowledge | "Project uses FFmpeg + Python 3.11" |
+| `feedback` | User corrections | "Always pick, don't ask" |
+| `session` | Current work state | "Working on auth. Blocked on tokens." |
 
-## Context Budgeting — The Killer Feature
+## Trust-Ranked Recall
 
-The `recall()` method answers: *"Given a query and a token budget, what memories should I inject into my LLM context?"*
+`recall()` doesn't just find relevant memories. It finds the **most trustworthy** relevant memories:
 
-```python
-# Get the most relevant memories, fitted to 2000 tokens
-context = mem.recall("fixing audio pipeline issues", max_tokens=2000)
-```
-
-**How it works:**
-1. FTS5 search returns top candidates
-2. Each candidate is scored: `relevance × 0.4 + recency × 0.2 + frequency × 0.2 + confidence × 0.2`
-3. Highest-scored memories are greedily packed into your token budget
-4. Returned as formatted markdown, ready for LLM injection
-5. Access counts are automatically updated (frequently-used memories rank higher)
-
-No embeddings needed. No vector database. Just SQLite FTS5 with porter stemming.
-
-## Import from Markdown
-
-Migrating from flat-file memory? Import your existing markdown files:
-
-```bash
-agentmem import ./errors_and_fixes.md --type bug
-agentmem import ./MEMORY.md
-```
-
-The importer:
-- Splits by H2/H3 headers (each section → one memory)
-- Reads YAML frontmatter for defaults (type, project, tags)
-- Extracts inline `tags: x, y, z` patterns
-- Infers types from section titles ("bug", "fix", "setting", etc.)
-
-**Frontmatter example:**
-
-```markdown
----
-type: bug
-project: my-agent
----
-
-### Database connection timeout
-
-The connection pool was exhausting under load.
-Fix: increase pool_size from 5 to 20.
-
-tags: database, performance
-```
+1. FTS5 search returns candidates
+2. Each scored: `relevance (25%) + trust status (20%) + provenance (20%) + recency (15%) + frequency (10%) + confidence (10%)`
+3. Validated canonical memories rank above unprovenanced hypothesis memories
+4. Deprecated and superseded memories are excluded entirely
+5. Packed greedily into your token budget
 
 ## Project Scoping
 
-Share one database across multiple projects or agents:
-
 ```python
-agent_a = Memory("./shared.db", project="frontend")
-agent_b = Memory("./shared.db", project="backend")
+frontend = Memory("./shared.db", project="frontend")
+backend = Memory("./shared.db", project="backend")
 
-agent_a.add(type="bug", title="CSS grid issue", content="...")
-agent_b.add(type="bug", title="API timeout", content="...")
-
-agent_a.search("bug")  # Only returns frontend bugs
-agent_b.search("bug")  # Only returns backend bugs
+frontend.search("bug")  # Only frontend bugs
+backend.search("bug")   # Only backend bugs
 ```
+
+## Battle-Tested
+
+This isn't theoretical. agentmem was built under production pressure over 2+ months of daily use:
+- 65+ YouTube Shorts produced with zero repeated production bugs
+- 330+ memories governing voice generation, FFmpeg assembly, image prompting, upload workflows
+- Every bug caught once, fixed once, never repeated
+- Governance engine reduced conflicts from 1,848 false positives to 11 real findings
 
 ## How It Works
 
 - **Storage:** SQLite with WAL mode (concurrent reads, thread-safe)
 - **Search:** FTS5 with porter stemming and unicode61 tokenizer
-- **Ranking:** Composite score combining text relevance, recency, access frequency, and confidence
-- **Token counting:** Defaults to `len(text) // 4` estimate. Install `tiktoken` for accuracy:
-
-```bash
-pip install quilmem[tokens]
-```
-
-```python
-import tiktoken
-enc = tiktoken.encoding_for_model("gpt-4")
-mem = Memory("./memory.db", token_counter=enc.encode)
-```
-
-## API Reference
-
-### `Memory(path, project, token_counter)`
-
-| Method | Description |
-|---|---|
-| `add(type, title, content, tags, ...)` | Store a memory. Returns `MemoryRecord`. |
-| `get(id)` | Retrieve by ID. Returns `MemoryRecord \| None`. |
-| `update(id, **kwargs)` | Update fields. Returns `MemoryRecord \| None`. |
-| `delete(id)` | Delete by ID. Returns `bool`. |
-| `search(query, type, tags, limit)` | FTS5 search. Returns `list[MemoryRecord]`. |
-| `recall(query, max_tokens, format)` | Context-budgeted retrieval. Returns `str`. |
-| `list(type, project, since, limit)` | List memories with filters. Returns `list[MemoryRecord]`. |
-| `stats()` | Database statistics. Returns `dict`. |
-
-### `MemoryRecord`
-
-```python
-@dataclass
-class MemoryRecord:
-    id: str
-    type: str           # setting, bug, decision, procedure, context, feedback
-    title: str
-    content: str
-    tags: list[str]
-    source: str
-    project: str
-    confidence: float   # 0.0-1.0
-    created_at: str     # ISO8601
-    updated_at: str
-    accessed_at: str
-    access_count: int
-    rank: float | None  # populated on search results
-```
+- **Ranking:** Composite score: text relevance + trust status + provenance + recency + frequency + confidence
+- **Governance:** Status lifecycle, conflict detection, staleness detection, health scoring
+- **Sync:** Provenance-aware with source hashing and resurrection
+- **Zero infrastructure:** No API keys, no cloud, no vector DB. Just a `.db` file.
 
 ## License
 

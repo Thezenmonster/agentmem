@@ -5,7 +5,15 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timezone
 
-from .models import MemoryRecord
+from .models import MemoryRecord, STATUS_TRUST
+
+
+def _safe_get(row, key, default=""):
+    """Safely get a column value, returning default if column doesn't exist."""
+    try:
+        return row[key]
+    except (IndexError, KeyError):
+        return default
 
 
 def _row_to_record(row: sqlite3.Row, rank: float) -> MemoryRecord:
@@ -19,6 +27,13 @@ def _row_to_record(row: sqlite3.Row, rank: float) -> MemoryRecord:
         project=row["project"],
         confidence=row["confidence"],
         supersedes=row["supersedes"],
+        status=_safe_get(row, "status", "active"),
+        source_path=_safe_get(row, "source_path", ""),
+        source_section=_safe_get(row, "source_section", ""),
+        source_hash=_safe_get(row, "source_hash", ""),
+        validated_at=_safe_get(row, "validated_at", ""),
+        deprecated_at=_safe_get(row, "deprecated_at", ""),
+        superseded_by=_safe_get(row, "superseded_by", ""),
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         accessed_at=row["accessed_at"],
@@ -93,19 +108,32 @@ def fts_search(
     except sqlite3.OperationalError:
         return []
 
-    # Re-rank with composite score
+    # Re-rank with composite score including trust governance
     scored = []
     for row in rows:
+        status = _safe_get(row, "status", "active")
+
+        # Skip deprecated and superseded memories from search results
+        if status in ("deprecated", "superseded"):
+            continue
+
         fts_rank = -row["fts_rank"]  # FTS5 rank is negative, lower = better
         recency = _recency_score(row["accessed_at"])
         frequency = _frequency_score(row["access_count"])
         confidence = row["confidence"]
+        trust = STATUS_TRUST.get(status, 0.5)
+
+        # Source priority: provenienced canonical > unprovenanced
+        source_path = _safe_get(row, "source_path", "")
+        provenance = 1.0 if source_path else 0.4
 
         composite = (
-            fts_rank * 0.4
-            + recency * 0.2
-            + frequency * 0.2
-            + confidence * 0.2
+            fts_rank * 0.25
+            + trust * 0.20        # Status trust
+            + provenance * 0.20   # Canonical source priority
+            + recency * 0.15
+            + frequency * 0.10
+            + confidence * 0.10
         )
         scored.append((row, composite))
 
@@ -116,14 +144,10 @@ def fts_search(
         record = _row_to_record(row, rank=round(score, 4))
         results.append(record)
 
-    # Bump access stats for returned results
-    now = datetime.now(timezone.utc).isoformat()
-    for r in results:
-        conn.execute(
-            "UPDATE memories SET accessed_at = ?, access_count = access_count + 1 WHERE id = ?",
-            (now, r.id),
-        )
-    conn.commit()
+    # Track retrieval separately — do NOT bump access_count here.
+    # access_count should only increase when the memory is actually USED,
+    # not just returned as a search candidate. This prevents self-reinforcing
+    # popularity bias in rankings.
 
     return results
 
