@@ -20,7 +20,7 @@ def _get_mem(ctx: click.Context) -> Memory:
 @click.option("--project", default="", help="Project scope.")
 @click.pass_context
 def main(ctx, db, project):
-    """agentmem — Production-ready agent memory."""
+    """agentmem -- Governed memory for coding agents."""
     ctx.ensure_object(dict)
     ctx.obj["db"] = db
     ctx.obj["project"] = project
@@ -216,7 +216,7 @@ def load_session(ctx):
 @click.argument("id")
 @click.pass_context
 def promote(ctx, id):
-    """Promote a memory: hypothesis → active → validated."""
+    """Promote a memory: hypothesis -> active -> validated."""
     mem = _get_mem(ctx)
     record = mem.promote(id)
     if record:

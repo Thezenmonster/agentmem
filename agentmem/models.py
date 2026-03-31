@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 MEMORY_TYPES = ("setting", "bug", "decision", "procedure", "context", "feedback", "session")
 
-# Truth governance statuses — lifecycle of a memory
+# Truth governance statuses -- lifecycle of a memory
 MEMORY_STATUSES = (
     "hypothesis",   # New observation, not yet validated. Enter as this when uncertain.
     "active",       # Default. Currently believed to be true and in use.

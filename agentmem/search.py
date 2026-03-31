@@ -72,7 +72,7 @@ def fts_search(
     limit: int = 10,
 ) -> list[MemoryRecord]:
     """Full-text search with optional filters. Returns ranked results."""
-    # Build FTS5 query — split into terms, quote each to avoid operator conflicts
+    # Build FTS5 query -- split into terms, quote each to avoid operator conflicts
     terms = query.replace('"', '""').split()
     fts_query = " OR ".join(f'"{t}"' for t in terms if t)
 
@@ -144,7 +144,7 @@ def fts_search(
         record = _row_to_record(row, rank=round(score, 4))
         results.append(record)
 
-    # Track retrieval separately — do NOT bump access_count here.
+    # Track retrieval separately -- do NOT bump access_count here.
     # access_count should only increase when the memory is actually USED,
     # not just returned as a search candidate. This prevents self-reinforcing
     # popularity bias in rankings.

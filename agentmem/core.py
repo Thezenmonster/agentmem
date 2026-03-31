@@ -1,4 +1,4 @@
-"""Core Memory class — all database operations."""
+"""Core Memory class -- all database operations."""
 
 from __future__ import annotations
 
@@ -162,10 +162,10 @@ class Memory:
         self._conn.commit()
         return self.get(id)
 
-    # ── Truth governance lifecycle ──────────────────────────────────
+    # -- Truth governance lifecycle ----------------------------------
 
     def promote(self, id: str) -> MemoryRecord | None:
-        """Promote a memory: hypothesis → active → validated.
+        """Promote a memory: hypothesis -> active -> validated.
         Each call advances one step. Validated is the highest trust level."""
         record = self.get(id)
         if not record:
@@ -319,7 +319,7 @@ class Memory:
         # Create new session
         new_record = self.add(
             type="session",
-            title=f"Session state — {self.project or 'default'}",
+            title=f"Session state -- {self.project or 'default'}",
             content=summary,
             tags=tags or ["session", "state"],
             source="session",

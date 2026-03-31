@@ -1,4 +1,4 @@
-"""agentmem — Trusted memory for long-lived coding agents. SQLite + FTS5. No infrastructure."""
+"""agentmem -- Trusted memory for long-lived coding agents. SQLite + FTS5. No infrastructure."""
 
 from .core import Memory
 from .governance import detect_conflicts, detect_stale, health_check, hash_content, hash_file_section

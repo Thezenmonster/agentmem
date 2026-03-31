@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-# v2: Truth governance — memory states, provenance, lifecycle
+# v2: Truth governance -- memory states, provenance, lifecycle
 MIGRATION_V2_SQL = """
 ALTER TABLE memories ADD COLUMN status TEXT DEFAULT 'active';
 ALTER TABLE memories ADD COLUMN source_path TEXT DEFAULT '';
@@ -97,7 +97,7 @@ def init_db(conn):
         current_version = 1
 
     if current_version < 2:
-        # Run v2 migration — add governance columns
+        # Run v2 migration -- add governance columns
         for stmt in MIGRATION_V2_SQL.strip().split(";"):
             stmt = stmt.strip()
             if not stmt:

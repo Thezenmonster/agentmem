@@ -86,7 +86,7 @@ def import_markdown(
 
     sections = _split_sections(body)
     if not sections:
-        # No sections — treat entire body as one memory
+        # No sections -- treat entire body as one memory
         sections = [(filepath.stem.replace("_", " ").replace("-", " ").title(), body)]
 
     # Fill in empty titles from filename

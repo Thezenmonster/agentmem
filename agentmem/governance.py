@@ -1,4 +1,4 @@
-"""Truth governance — conflict detection, staleness detection, health checks.
+"""Truth governance -- conflict detection, staleness detection, health checks.
 
 This module is the core differentiator. It answers:
 - What memories contradict each other?
@@ -92,7 +92,7 @@ class HealthReport:
         return "\n".join(lines)
 
 
-# ── Conflict Detection ──────────────────────────────────────────
+# -- Conflict Detection ------------------------------------------
 
 # Negation patterns that signal potential contradictions
 _NEGATION_PAIRS = [
@@ -196,7 +196,7 @@ def detect_conflicts(
                     memory_a=a,
                     memory_b=b,
                     reason=f"Duplicate: {jaccard:.0%} overlap on ({shared}). "
-                           f"Same content stored twice — supersede the older one.",
+                           f"Same content stored twice -- supersede the older one.",
                     severity=severity,
                     kind="duplicate",
                 ))
@@ -247,7 +247,7 @@ def detect_conflicts(
     return conflicts
 
 
-# ── Staleness Detection ──────────────────────────────────────────
+# -- Staleness Detection ------------------------------------------
 
 def detect_stale(
     conn: sqlite3.Connection,
@@ -261,7 +261,7 @@ def detect_stale(
     2. It references a source file that no longer exists
     3. Its source_hash doesn't match the current file content (source drifted)
 
-    Checks 2 and 3 run on ALL active/hypothesis memories regardless of age —
+    Checks 2 and 3 run on ALL active/hypothesis memories regardless of age --
     a source file that changed yesterday means the memory is stale NOW.
     """
     conditions = ["COALESCE(status, 'active') IN ('active', 'hypothesis')"]
@@ -316,7 +316,7 @@ def detect_stale(
     return stale
 
 
-# ── Source Hashing ──────────────────────────────────────────────
+# -- Source Hashing ----------------------------------------------
 
 def hash_content(content: str) -> str:
     """Hash content for change detection. Returns first 16 chars of SHA-256."""
@@ -363,7 +363,7 @@ def hash_file_section(filepath: str, section: str = "") -> str:
     return hash_content(content)
 
 
-# ── Health Check ──────────────────────────────────────────────
+# -- Health Check ----------------------------------------------
 
 def health_check(
     conn: sqlite3.Connection,
