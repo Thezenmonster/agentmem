@@ -438,19 +438,23 @@ mem.supersede(old.id, new.id)            <span class="comment"># old points to r
     </section>
 
     <!-- Beta signup -->
-    <section class="problem" id="beta" style="text-align:center;">
-        <h2>Get early access</h2>
-        <p style="color:var(--muted); margin-bottom:24px;">
-            We're building a dashboard for conflicts, stale memory, health history, and team memory.<br>
-            Drop your email to get notified when the paid beta opens.
-        </p>
-        <div class="cta-group">
-            <a href="https://github.com/Thezenmonster/agentmem/discussions/new?category=general&title=Beta%20interest&body=I%27m%20using%20%5BClaude%20Code%20%2F%20Cursor%20%2F%20Codex%20%2F%20other%5D%20and%20I%27d%20be%20interested%20in%20the%20paid%20dashboard%20beta."
-               class="btn btn-primary" target="_blank">Join the Beta</a>
-            <a href="https://github.com/Thezenmonster/agentmem" class="btn btn-secondary" target="_blank">Star on GitHub</a>
-        </div>
-        <p style="color:var(--muted); font-size:0.8em; margin-top:12px;">Post in GitHub Discussions so we know what you're building with.</p>
-    </section>
+        <section class="problem" id="beta" style="text-align:center;">
+            <h2>Get early access</h2>
+            <p style="color:var(--muted); margin-bottom:24px;">
+                We’re building a dashboard for conflicts, stale memory, health history, and team memory.<br>
+                Drop your email to get notified when the paid beta opens.
+            </p>
+            <form class="beta-form" action="https://formspree.io/f/mdapdgjk" method="POST" id="betaForm">
+                <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; max-width:500px; margin:0 auto;">
+                    <input type="email" name="email" placeholder="you@example.com" required
+                        style="flex:1; min-width:200px; padding:12px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:1em;">
+                    <button type="submit" class="btn btn-primary" style="border:none; cursor:pointer;">
+                        Join the Beta
+                    </button>
+                </div>
+            </form>
+            <p style="color:var(--muted); font-size:0.8em; margin-top:12px;">No spam. Just a heads-up when the beta opens.</p>
+        </section>
 
 </div>
 
