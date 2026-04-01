@@ -194,6 +194,12 @@ mem.stats()
 ### CLI
 
 ```bash
+# Get started in 30 seconds
+agentmem init --tool claude --project myapp
+
+# Check if everything's working
+agentmem doctor
+
 # Core
 agentmem add --type bug --title "CSS grid issue" "Flexbox fallback needed"
 agentmem search "grid layout"

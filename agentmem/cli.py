@@ -335,6 +335,211 @@ def health(ctx, days):
 
 
 @main.command()
+@click.option("--tool", type=click.Choice(["claude", "cursor", "codex", "windsurf"]),
+              default=None, help="Generate MCP config for this tool.")
+@click.option("--project", "proj", default="", help="Project name for scoping.")
+@click.pass_context
+def init(ctx, tool, proj):
+    """Set up agentmem in 30 seconds. Creates DB, adds a starter memory, shows health."""
+    import os
+    from pathlib import Path
+
+    db_path = ctx.obj["db"]
+    project = proj or ctx.obj.get("project", "") or Path.cwd().name
+
+    click.echo("agentmem init")
+    click.echo(f"{'=' * 50}\n")
+
+    # Step 1: Create DB
+    mem = Memory(path=db_path, project=project)
+    is_new = mem.stats()["total"] == 0
+    if is_new:
+        click.echo(f"  [1/4] Created database: {db_path}")
+    else:
+        click.echo(f"  [1/4] Database exists: {db_path} ({mem.stats()['total']} memories)")
+
+    # Step 2: Add starter memory if empty
+    if is_new:
+        mem.add(
+            type="context",
+            title=f"Project: {project}",
+            content=f"This memory database was initialized for project '{project}'. "
+                    f"Add memories with mem.add() or the CLI. "
+                    f"Run 'agentmem health' to check system status.",
+            status="active",
+        )
+        click.echo(f"  [2/4] Added starter memory for project '{project}'")
+    else:
+        click.echo(f"  [2/4] Skipped starter memory (DB already has content)")
+
+    # Step 3: Generate MCP config
+    # Detect the agentmem command path
+    agentmem_cmd = "agentmem"
+    db_abs = str(Path(db_path).resolve()).replace("\\", "/")
+
+    if tool:
+        click.echo(f"  [3/4] MCP config for {tool}:\n")
+
+        if tool in ("claude",):
+            config = {
+                "mcpServers": {
+                    "agentmem": {
+                        "command": agentmem_cmd,
+                        "args": ["--db", db_abs, "--project", project, "serve"],
+                        "type": "stdio"
+                    }
+                }
+            }
+            config_path = ".claude/settings.json" if tool == "claude" else ""
+            click.echo(f"    Add to {config_path} (or ~/.claude/settings.json for global):\n")
+            click.echo(f"    {json.dumps(config, indent=2).replace(chr(10), chr(10) + '    ')}")
+
+        elif tool in ("cursor", "windsurf"):
+            config = {
+                "mcpServers": {
+                    "agentmem": {
+                        "command": agentmem_cmd,
+                        "args": ["--db", db_abs, "--project", project, "serve"]
+                    }
+                }
+            }
+            dir_name = ".cursor" if tool == "cursor" else ".windsurf"
+            click.echo(f"    Add to {dir_name}/mcp.json (or ~/{dir_name}/mcp.json for global):\n")
+            click.echo(f"    {json.dumps(config, indent=2).replace(chr(10), chr(10) + '    ')}")
+
+        elif tool == "codex":
+            click.echo(f"    Add to ~/.codex/config.toml (or .codex/config.toml for project):\n")
+            click.echo(f'    [mcp_servers.agentmem]')
+            click.echo(f'    command = "{agentmem_cmd}"')
+            click.echo(f'    args = ["--db", "{db_abs}", "--project", "{project}", "serve"]')
+
+        click.echo()
+    else:
+        click.echo(f"  [3/4] Skipped MCP config (use --tool claude|cursor|codex|windsurf)")
+
+    # Step 4: Health check
+    from .governance import health_check
+    report = health_check(mem._conn, project=project)
+    click.echo(f"  [4/4] Health: {report.health_score:.0f}/100 | "
+               f"Memories: {report.total_memories} | "
+               f"Conflicts: {len(report.conflicts)} | "
+               f"Stale: {len(report.stale)}")
+
+    mem.close()
+
+    click.echo(f"\n{'=' * 50}")
+    click.echo(f"  Done. Your memory DB is at: {db_abs}")
+    click.echo(f"  Project: {project}")
+    click.echo(f"\n  Next steps:")
+    click.echo(f"    agentmem add --type decision --title \"My first rule\" \"Description here\"")
+    click.echo(f"    agentmem search \"my rule\"")
+    click.echo(f"    agentmem health")
+    if not tool:
+        click.echo(f"    agentmem init --tool claude   # generate MCP config")
+    click.echo(f"{'=' * 50}")
+
+
+@main.command()
+@click.pass_context
+def doctor(ctx):
+    """Check if agentmem is set up correctly. Diagnoses common problems."""
+    import os
+    from pathlib import Path
+
+    db_path = ctx.obj["db"]
+    project = ctx.obj.get("project", "")
+    all_ok = True
+
+    click.echo("agentmem doctor")
+    click.echo(f"{'=' * 50}\n")
+
+    # Check 1: Database exists and is readable
+    db_exists = Path(db_path).exists()
+    if db_exists:
+        try:
+            mem = Memory(path=db_path, project=project)
+            stats = mem.stats()
+            click.echo(f"  [OK] Database: {db_path} ({stats['total']} memories, {stats['db_size_kb']} KB)")
+        except Exception as e:
+            click.echo(f"  [FAIL] Database: {db_path} -- {e}")
+            all_ok = False
+            mem = None
+    else:
+        click.echo(f"  [FAIL] Database not found: {db_path}")
+        click.echo(f"         Run: agentmem init")
+        all_ok = False
+        mem = None
+
+    # Check 2: MCP dependency
+    try:
+        import mcp  # noqa: F401
+        click.echo(f"  [OK] MCP package installed")
+    except ImportError:
+        click.echo(f"  [WARN] MCP package not installed")
+        click.echo(f"         Run: pip install quilmem[mcp]")
+
+    # Check 3: Schema version
+    if mem:
+        try:
+            row = mem._conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
+            version = row[0] if row else 0
+            if version >= 2:
+                click.echo(f"  [OK] Schema version: {version} (governance enabled)")
+            else:
+                click.echo(f"  [WARN] Schema version: {version} (governance not migrated)")
+                click.echo(f"         This will auto-migrate on next use.")
+        except Exception:
+            click.echo(f"  [WARN] Could not check schema version")
+
+    # Check 4: Health check
+    if mem:
+        from .governance import health_check
+        report = health_check(mem._conn, project=project)
+        if report.health_score >= 70:
+            click.echo(f"  [OK] Health: {report.health_score:.0f}/100")
+        elif report.health_score >= 40:
+            click.echo(f"  [WARN] Health: {report.health_score:.0f}/100")
+            if report.conflicts:
+                click.echo(f"         {len(report.conflicts)} conflicts -- run: agentmem conflicts")
+            if report.stale:
+                click.echo(f"         {len(report.stale)} stale -- run: agentmem stale")
+        else:
+            click.echo(f"  [FAIL] Health: {report.health_score:.0f}/100 -- needs attention")
+            all_ok = False
+
+    # Check 5: Project scoping
+    if mem and project:
+        click.echo(f"  [OK] Project: {project}")
+    elif mem:
+        click.echo(f"  [WARN] No project scope set (memories not isolated)")
+        click.echo(f"         Use: agentmem --project myproject <command>")
+
+    # Check 6: Governance status
+    if mem:
+        by_status = {}
+        for row in mem._conn.execute(
+            "SELECT COALESCE(status, 'active') as s, COUNT(*) as c FROM memories GROUP BY s"
+        ):
+            by_status[row["s"]] = row["c"]
+        validated = by_status.get("validated", 0)
+        if validated > 0:
+            click.echo(f"  [OK] Validated memories: {validated}")
+        elif stats["total"] > 0:
+            click.echo(f"  [WARN] No validated memories yet")
+            click.echo(f"         Promote trusted rules: agentmem promote <id>")
+
+    if mem:
+        mem.close()
+
+    click.echo(f"\n{'=' * 50}")
+    if all_ok:
+        click.echo(f"  All checks passed.")
+    else:
+        click.echo(f"  Some checks failed. See above for fixes.")
+    click.echo(f"{'=' * 50}")
+
+
+@main.command()
 @click.pass_context
 def serve(ctx):
     """Start MCP stdio server."""
