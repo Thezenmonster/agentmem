@@ -1,0 +1,44 @@
+name: Setup Help
+description: Having trouble getting agentmem connected to your coding agent.
+title: "[Setup] "
+labels: ["setup"]
+body:
+  - type: input
+    id: tool
+    attributes:
+      label: What tool are you connecting to?
+      placeholder: Claude Code / Cursor / Codex / Windsurf / Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's not working?
+      description: Where did you get stuck? What error did you see?
+      placeholder: |
+        I followed the MCP setup guide but tools don't appear in Cursor...
+    validations:
+      required: true
+  - type: textarea
+    id: init-output
+    attributes:
+      label: Output of agentmem init
+      description: Paste the output of `agentmem init --tool <your-tool>` here.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: doctor-output
+    attributes:
+      label: Output of agentmem doctor
+      description: Paste the output of `agentmem doctor` here.
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04
+    validations:
+      required: false

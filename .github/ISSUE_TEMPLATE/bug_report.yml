@@ -1,0 +1,61 @@
+name: Bug Report
+description: Something broke or isn't working as expected.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: tool
+    attributes:
+      label: What tool are you using?
+      description: Claude Code, Cursor, Codex, Windsurf, or standalone CLI/Python
+      placeholder: e.g. Claude Code
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What were you trying to do, and what went wrong?
+      placeholder: I ran agentmem health and got...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: I expected it to...
+    validations:
+      required: false
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to trigger the bug.
+      placeholder: |
+        1. pip install quilmem
+        2. agentmem init --tool claude
+        3. ...
+    validations:
+      required: false
+  - type: textarea
+    id: doctor-output
+    attributes:
+      label: Output of agentmem doctor
+      description: Paste the output of `agentmem doctor` here.
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04
+    validations:
+      required: false
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      placeholder: e.g. 3.12
+    validations:
+      required: false
