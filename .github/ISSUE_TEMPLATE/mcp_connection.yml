@@ -1,0 +1,57 @@
+name: MCP Connection Problem
+description: agentmem tools aren't showing up in your coding agent.
+title: "[MCP] "
+labels: ["setup", "mcp"]
+body:
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which coding agent?
+      options:
+        - Claude Code
+        - Cursor
+        - Codex
+        - Windsurf
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's happening?
+      description: What do you see (or not see) when trying to use agentmem tools?
+      placeholder: |
+        Tools don't appear in Claude Code. No errors, they just aren't there.
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Your MCP config
+      description: Paste the relevant section from your settings file.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: debug-info
+    attributes:
+      label: Output of `agentmem debug-info`
+      description: Run `agentmem debug-info` and paste the output here.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: serve-output
+    attributes:
+      label: Output of `agentmem serve` (if you tried it manually)
+      description: Run `agentmem serve` in a terminal and paste any errors.
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04
+    validations:
+      required: false

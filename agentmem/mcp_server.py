@@ -285,6 +285,9 @@ def run_server(db_path: str = "./memory.db", project: str = ""):
                 lines.append("\nTop conflicts:")
                 for c in report.conflicts[:5]:
                     lines.append(f"  {'!!' if c.severity == 'critical' else '?'} {c.memory_a.title[:40]} vs {c.memory_b.title[:40]}")
+            if report.health_score >= 100:
+                validated = report.by_status.get("validated", 0)
+                lines.append(f"\nFully governed. 0 conflicts, 0 stale, {validated} validated rules.")
             return [TextContent(type="text", text="\n".join(lines))]
 
         elif name == "memory_conflicts":

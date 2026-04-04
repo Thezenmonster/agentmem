@@ -36,7 +36,7 @@ mem.add(type="decision", title="Use per-line atempo",
         status="active")
 
 # Something you're not sure about yet
-mem.add(type="decision", title="Maybe try 2-second gaps before CTA",
+hypothesis = mem.add(type="decision", title="Maybe try 2-second gaps before CTA",
         content="Hypothesis from last session. Needs testing.",
         status="hypothesis")
 
@@ -48,9 +48,9 @@ results = mem.search("audio mixing")
 context = mem.recall("building a narration track", max_tokens=2000)
 
 # Lifecycle — promote what's proven, deprecate what's not
-mem.promote(record.id)                    # hypothesis -> active -> validated
-mem.deprecate(record.id, reason="Disproven by data")
-mem.supersede(old_id, new_id)             # old points to replacement
+mem.promote(hypothesis.id)                # hypothesis -> active -> validated
+mem.deprecate(hypothesis.id, reason="Disproven by data")
+mem.supersede(old.id, new.id)             # old points to replacement
 
 # Health check — is your memory system trustworthy?
 from agentmem import health_check

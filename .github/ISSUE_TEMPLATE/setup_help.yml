@@ -28,17 +28,18 @@ body:
     validations:
       required: false
   - type: textarea
+    id: debug-info
+    attributes:
+      label: Output of `agentmem debug-info`
+      description: Run `agentmem debug-info` and paste the output here.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
     id: doctor-output
     attributes:
       label: Output of agentmem doctor
       description: Paste the output of `agentmem doctor` here.
       render: shell
-    validations:
-      required: false
-  - type: input
-    id: os
-    attributes:
-      label: OS
-      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04
     validations:
       required: false

@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import io
 import json
 import sys
 
+# Windows cp1252 breaks on unicode chars like arrows/dashes in memory titles
+if sys.stdout and hasattr(sys.stdout, 'encoding') and sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if sys.stderr and hasattr(sys.stderr, 'encoding') and sys.stderr.encoding and sys.stderr.encoding.lower() != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 import click
 
+from . import __version__
 from .core import Memory
 from .models import MEMORY_TYPES, MEMORY_STATUSES
 
@@ -29,16 +37,20 @@ def main(ctx, db, project):
 @main.command()
 @click.option("--type", "mem_type", type=click.Choice(MEMORY_TYPES), required=True)
 @click.option("--title", required=True)
+@click.option("--status", "mem_status", type=click.Choice(MEMORY_STATUSES), default="active",
+              help="Initial status (default: active).")
 @click.option("--tags", default="", help="Comma-separated tags.")
 @click.argument("content")
 @click.pass_context
-def add(ctx, mem_type, title, tags, content):
+def add(ctx, mem_type, title, mem_status, tags, content):
     """Add a memory."""
     mem = _get_mem(ctx)
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
-    record = mem.add(type=mem_type, title=title, content=content, tags=tag_list, source="cli")
+    record = mem.add(type=mem_type, title=title, content=content, tags=tag_list,
+                     source="cli", status=mem_status)
+    status_label = f" ({record.status})" if record.status != "active" else ""
     click.echo(f"Added: {record.id}")
-    click.echo(f"  [{record.type}] {record.title}")
+    click.echo(f"  [{record.type}] {record.title}{status_label}")
     mem.close()
 
 
@@ -330,6 +342,13 @@ def health(ctx, days):
     if report.orphaned_supersedes:
         click.echo(f"  ORPHANED: {len(report.orphaned_supersedes)}")
 
+    if report.health_score >= 100:
+        validated = report.by_status.get("validated", 0)
+        click.echo(f"  Fully governed. 0 conflicts, 0 stale, {validated} validated rules.")
+        click.echo(f"  You're running a clean memory system. That's rare.")
+        click.echo(f"\n  If this helped, share your setup:")
+        click.echo(f"    https://github.com/thezenmonster/agentmem/discussions")
+
     click.echo(f"\n{'=' * 50}")
     mem.close()
 
@@ -378,6 +397,14 @@ def init(ctx, tool, proj):
     db_abs = str(Path(db_path).resolve()).replace("\\", "/")
 
     if tool:
+        # Check MCP dependency
+        try:
+            import mcp  # noqa: F401
+        except ImportError:
+            click.echo(f"  [!] MCP package not installed. Run:")
+            click.echo(f"      pip install quilmem[mcp]")
+            click.echo()
+
         click.echo(f"  [3/4] MCP config for {tool}:\n")
 
         if tool in ("claude",):
@@ -430,13 +457,28 @@ def init(ctx, tool, proj):
     click.echo(f"\n{'=' * 50}")
     click.echo(f"  Done. Your memory DB is at: {db_abs}")
     click.echo(f"  Project: {project}")
-    click.echo(f"\n  Next steps:")
-    click.echo(f"    agentmem add --type decision --title \"My first rule\" \"Description here\"")
-    click.echo(f"    agentmem search \"my rule\"")
+    click.echo(f"\n  Try the differentiators:")
+    click.echo(f"    # Add a rule you're certain about")
+    click.echo(f"    agentmem add --type decision --status validated \\")
+    click.echo(f"      --title \"Never force-push to main\" \"Enforced after incident.\"")
+    click.echo(f"")
+    click.echo(f"    # Add something unproven")
+    click.echo(f"    agentmem add --type decision --status hypothesis \\")
+    click.echo(f"      --title \"Maybe batch DB writes\" \"Needs benchmarking.\"")
+    click.echo(f"")
+    click.echo(f"    # Save your session so the next agent picks up where you left off")
+    click.echo(f"    agentmem save-session \"Working on auth refactor. Blocked on tokens.\"")
+    click.echo(f"    agentmem load-session")
+    click.echo(f"")
+    click.echo(f"    # Check what your agent should trust")
     click.echo(f"    agentmem health")
     if not tool:
-        click.echo(f"    agentmem init --tool claude   # generate MCP config")
+        click.echo(f"")
+        click.echo(f"    # Connect to your coding agent")
+        click.echo(f"    agentmem init --tool claude   # or cursor, codex, windsurf")
     click.echo(f"{'=' * 50}")
+    click.echo(f"\n  Something break? {NEW_ISSUE_URL}")
+    click.echo(f"  Paste debug context: agentmem debug-info")
 
 
 @main.command()
@@ -536,7 +578,94 @@ def doctor(ctx):
         click.echo(f"  All checks passed.")
     else:
         click.echo(f"  Some checks failed. See above for fixes.")
+        click.echo(f"\n  Still stuck? {NEW_ISSUE_URL}")
+        click.echo(f"  Paste debug context: agentmem debug-info")
     click.echo(f"{'=' * 50}")
+
+
+ISSUES_URL = "https://github.com/thezenmonster/agentmem/issues"
+NEW_ISSUE_URL = f"{ISSUES_URL}/new/choose"
+
+
+@main.command("debug-info")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON for pasting into issues.")
+@click.pass_context
+def debug_info(ctx, as_json):
+    """Print system info for bug reports. Paste the output into a GitHub issue."""
+    import platform
+    from pathlib import Path
+
+    db_path = ctx.obj["db"]
+    project = ctx.obj.get("project", "")
+
+    info = {
+        "agentmem_version": __version__,
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "os": platform.system(),
+        "db_path": str(Path(db_path).resolve()),
+        "db_exists": Path(db_path).exists(),
+        "project": project,
+    }
+
+    # Check MCP
+    try:
+        import mcp
+        info["mcp_installed"] = True
+        info["mcp_version"] = getattr(mcp, "__version__", "unknown")
+    except ImportError:
+        info["mcp_installed"] = False
+
+    # DB stats if exists
+    if info["db_exists"]:
+        try:
+            mem = Memory(path=db_path, project=project)
+            stats = mem.stats()
+            info["total_memories"] = stats["total"]
+            info["db_size_kb"] = stats["db_size_kb"]
+
+            row = mem._conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
+            info["schema_version"] = row[0] if row else 0
+
+            from .governance import health_check as hc
+            report = hc(mem._conn, project=project)
+            info["health_score"] = report.health_score
+            info["conflicts"] = len(report.conflicts)
+            info["stale"] = len(report.stale)
+
+            by_status = {}
+            for r in mem._conn.execute(
+                "SELECT COALESCE(status, 'active') as s, COUNT(*) as c FROM memories GROUP BY s"
+            ):
+                by_status[r["s"]] = r["c"]
+            info["by_status"] = by_status
+
+            mem.close()
+        except Exception as e:
+            info["db_error"] = str(e)
+
+    if as_json:
+        click.echo(json.dumps(info, indent=2))
+    else:
+        click.echo("agentmem debug-info")
+        click.echo(f"{'=' * 50}")
+        click.echo(f"  agentmem:  {info['agentmem_version']}")
+        click.echo(f"  Python:    {info['python_version']}")
+        click.echo(f"  Platform:  {info['platform']}")
+        click.echo(f"  DB:        {info['db_path']} ({'exists' if info['db_exists'] else 'NOT FOUND'})")
+        click.echo(f"  Project:   {info.get('project', '(none)')}")
+        click.echo(f"  MCP:       {'yes' + (' v' + info.get('mcp_version', '?')) if info.get('mcp_installed') else 'not installed'}")
+        if info.get("total_memories") is not None:
+            click.echo(f"  Memories:  {info['total_memories']} ({info['db_size_kb']} KB)")
+            click.echo(f"  Schema:    v{info.get('schema_version', '?')}")
+            click.echo(f"  Health:    {info['health_score']:.0f}/100 | Conflicts: {info['conflicts']} | Stale: {info['stale']}")
+            if info.get("by_status"):
+                parts = [f"{s}: {c}" for s, c in sorted(info["by_status"].items())]
+                click.echo(f"  Status:    {', '.join(parts)}")
+        if info.get("db_error"):
+            click.echo(f"  DB Error:  {info['db_error']}")
+        click.echo(f"{'=' * 50}")
+        click.echo(f"\n  Paste this into a bug report: {NEW_ISSUE_URL}")
 
 
 @main.command()
@@ -546,6 +675,6 @@ def serve(ctx):
     try:
         from .mcp_server import run_server
     except ImportError:
-        click.echo("MCP support requires: pip install agentmem[mcp]", err=True)
+        click.echo("MCP support requires: pip install quilmem[mcp]", err=True)
         sys.exit(1)
     run_server(db_path=ctx.obj["db"], project=ctx.obj.get("project", ""))

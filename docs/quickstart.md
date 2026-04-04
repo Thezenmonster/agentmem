@@ -13,6 +13,7 @@ pip install quilmem
 ```bash
 # A validated rule (you're certain about this)
 agentmem add --type decision --title "Never force-push to main" \
+  --status validated \
   "Enforced after incident on March 3. Use feature branches + PR."
 
 # A bug you've fixed
@@ -21,6 +22,7 @@ agentmem add --type bug --title "CORS headers missing on /api/auth" \
 
 # A hypothesis (not yet proven)
 agentmem add --type decision --title "Maybe batch DB writes" \
+  --status hypothesis \
   "Hypothesis: batching inserts could reduce API latency by 40%. Needs benchmarking."
 ```
 
@@ -92,5 +94,5 @@ Your coding agent can now remember decisions, avoid past mistakes, and know what
 ## Next Steps
 
 - [Before/After: Why Governance Matters](before-after.md)
-- [Full API Reference](../README.md#api-reference)
+- [Full API Reference](../README.md#three-interfaces)
 - [MCP Setup Guide](mcp-setup.md)

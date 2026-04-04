@@ -38,24 +38,10 @@ body:
     validations:
       required: false
   - type: textarea
-    id: doctor-output
+    id: debug-info
     attributes:
-      label: Output of agentmem doctor
-      description: Paste the output of `agentmem doctor` here.
+      label: Output of `agentmem debug-info`
+      description: Run `agentmem debug-info` and paste the output here. This captures your OS, Python version, DB state, and health in one go.
       render: shell
-    validations:
-      required: false
-  - type: input
-    id: os
-    attributes:
-      label: OS
-      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04
-    validations:
-      required: false
-  - type: input
-    id: python-version
-    attributes:
-      label: Python version
-      placeholder: e.g. 3.12
     validations:
       required: false

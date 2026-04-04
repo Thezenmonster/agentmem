@@ -136,7 +136,7 @@ def detect_conflicts(
     2. Check if one negates what the other asserts
     3. Flag when both are active/validated (critical) or one is deprecated (warning)
     """
-    conditions = ["status NOT IN ('superseded')"]
+    conditions = ["status NOT IN ('superseded', 'deprecated')"]
     params = []
     if project:
         conditions.append("project = ?")
@@ -398,9 +398,14 @@ def health_check(
     ).fetchone()[0]
 
     # Orphaned supersedes (points to ID that doesn't exist)
-    orphaned = []
+    orphan_where = "WHERE supersedes != '' AND supersedes NOT IN (SELECT id FROM memories)"
+    orphan_params = []
+    if project:
+        orphan_where += " AND project = ?"
+        orphan_params.append(project)
     rows = conn.execute(
-        f"SELECT * FROM memories WHERE supersedes != '' AND supersedes NOT IN (SELECT id FROM memories)",
+        f"SELECT * FROM memories {orphan_where}",
+        orphan_params,
     ).fetchall()
     orphaned = [_row_to_record(r) for r in rows]
 

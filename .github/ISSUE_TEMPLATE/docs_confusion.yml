@@ -1,0 +1,29 @@
+name: Docs Confusion
+description: Something in the docs was wrong, unclear, or didn't match what actually happened.
+title: "[Docs] "
+labels: ["docs"]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Which page or section?
+      description: Link to the page, or describe where you were reading.
+      placeholder: e.g. quickstart.md, README "60-Second Demo", landing page
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What was confusing or wrong?
+      description: What did the docs say, and what actually happened when you followed them?
+      placeholder: |
+        The quickstart says to run X, but when I did, I got Y instead of Z.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: What would have been clearer?
+      description: Optional. If you figured it out, what should the docs say instead?
+    validations:
+      required: false

@@ -214,6 +214,82 @@
         .yes { color: var(--green); }
         .no { color: var(--muted); }
 
+        /* Beta form */
+        .beta-form {
+            max-width: 480px;
+            margin: 0 auto;
+            text-align: left;
+        }
+        .beta-form label {
+            display: block;
+            color: var(--muted);
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 4px;
+            margin-top: 16px;
+        }
+        .beta-form input,
+        .beta-form select,
+        .beta-form textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95em;
+        }
+        .beta-form input:focus,
+        .beta-form select:focus,
+        .beta-form textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .beta-form textarea { resize: vertical; min-height: 60px; }
+        .beta-form select { appearance: auto; }
+        .beta-form .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 6px;
+        }
+        .beta-form .radio-group label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0;
+            font-weight: 400;
+            cursor: pointer;
+        }
+        .beta-form .radio-group input { width: auto; }
+        .beta-form button {
+            margin-top: 24px;
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .beta-form button:hover { opacity: 0.85; }
+        .beta-form .note {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.75em;
+            margin-top: 10px;
+        }
+        .beta-success {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+        }
+        .beta-success h3 { color: var(--green); font-size: 1.3em; margin-bottom: 8px; }
+        .beta-success p { color: var(--muted); }
+
         /* Footer */
         footer {
             padding: 40px 0;
@@ -238,7 +314,8 @@
         <div class="install">pip install quilmem</div>
         <div class="cta-group">
             <a href="https://github.com/Thezenmonster/agentmem" class="btn btn-primary">View on GitHub</a>
-            <a href="quickstart.html" class="btn btn-secondary">5-Minute Quickstart</a>
+            <a href="mcp-setup.html" class="btn btn-secondary">MCP Setup (2 min)</a>
+            <a href="quickstart.html" class="btn btn-secondary">Python Quickstart</a>
         </div>
     </section>
 
@@ -339,8 +416,11 @@ report = health_check(mem._conn)
 <span class="comment"># Health: 85/100 | Conflicts: 1 | Stale: 0</span>
 
 <span class="comment"># Lifecycle management</span>
-mem.promote(record.id)                   <span class="comment"># hypothesis -> active -> validated</span>
-mem.deprecate(old.id, reason=<span class="string">"Disproven"</span>)
+rule = mem.add(type=<span class="string">"decision"</span>, title=<span class="string">"Batch writes"</span>,
+        content=<span class="string">"Hypothesis: may reduce latency."</span>,
+        status=<span class="string">"hypothesis"</span>)
+mem.promote(rule.id)                     <span class="comment"># hypothesis -> active -> validated</span>
+mem.deprecate(rule.id, reason=<span class="string">"Disproven"</span>)
 mem.supersede(old.id, new.id)            <span class="comment"># old points to replacement</span></pre>
     </section>
 
@@ -437,24 +517,84 @@ mem.supersede(old.id, new.id)            <span class="comment"># old points to r
         </table>
     </section>
 
+    <!-- Feedback -->
+    <section class="problem" id="feedback" style="text-align:center;">
+        <h2>Something break? Tell us.</h2>
+        <p style="color:var(--muted); margin-bottom:24px;">
+            Every activation path has a way to report where it broke.<br>
+            Run <code>agentmem debug-info</code> to capture your system state, then open an issue.
+        </p>
+        <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+            <a href="https://github.com/thezenmonster/agentmem/issues/new?template=setup_help.yml" style="color:var(--accent);">Setup problem</a>
+            <a href="https://github.com/thezenmonster/agentmem/issues/new?template=mcp_connection.yml" style="color:var(--accent);">MCP not connecting</a>
+            <a href="https://github.com/thezenmonster/agentmem/issues/new?template=bug_report.yml" style="color:var(--accent);">Bug report</a>
+            <a href="https://github.com/thezenmonster/agentmem/issues/new?template=docs_confusion.yml" style="color:var(--accent);">Docs confusion</a>
+            <a href="https://github.com/thezenmonster/agentmem/issues/new?template=feature_request.yml" style="color:var(--accent);">Feature request</a>
+        </div>
+        <p style="color:var(--muted); margin-top:16px; font-size:0.85em;">
+            Or see <a href="troubleshooting.html" style="color:var(--accent);">Troubleshooting</a> for common fixes.
+        </p>
+    </section>
+
     <!-- Beta signup -->
-        <section class="problem" id="beta" style="text-align:center;">
-            <h2>Get early access</h2>
-            <p style="color:var(--muted); margin-bottom:24px;">
-                We’re building a dashboard for conflicts, stale memory, health history, and team memory.<br>
-                Drop your email to get notified when the paid beta opens.
-            </p>
-            <form class="beta-form" action="https://formspree.io/f/mdapdgjk" method="POST" id="betaForm">
-                <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; max-width:500px; margin:0 auto;">
-                    <input type="email" name="email" placeholder="you@example.com" required
-                        style="flex:1; min-width:200px; padding:12px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:1em;">
-                    <button type="submit" class="btn btn-primary" style="border:none; cursor:pointer;">
-                        Join the Beta
-                    </button>
+    <section class="problem" id="beta" style="text-align:center;">
+        <h2>Get early access</h2>
+        <p style="color:var(--muted); margin-bottom:24px;">
+            We're building a dashboard for conflicts, stale memory, health history, and team memory.<br>
+            Join the beta. Takes 10 seconds.
+        </p>
+        <div id="beta-form-container">
+            <form class="beta-form" action="https://formspree.io/f/REPLACE_ME" method="POST" id="betaForm">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="you@example.com">
+
+                <label for="tool">What tool do you use?</label>
+                <select id="tool" name="tool" required>
+                    <option value="" disabled selected>Pick one</option>
+                    <option value="Claude Code">Claude Code</option>
+                    <option value="Cursor">Cursor</option>
+                    <option value="Codex CLI">Codex CLI</option>
+                    <option value="Windsurf">Windsurf</option>
+                    <option value="Other">Other</option>
+                </select>
+
+                <label for="pain">Biggest memory pain right now?</label>
+                <textarea id="pain" name="pain" placeholder="e.g. My agent keeps forgetting project conventions between sessions"></textarea>
+
+                <label>Interested in a paid dashboard later?</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="paid" value="yes"> Yes</label>
+                    <label><input type="radio" name="paid" value="maybe"> Maybe</label>
+                    <label><input type="radio" name="paid" value="no"> No</label>
                 </div>
+
+                <button type="submit">Join the Beta</button>
+                <p class="note">No spam. Just beta access and updates.</p>
             </form>
-            <p style="color:var(--muted); font-size:0.8em; margin-top:12px;">No spam. Just a heads-up when the beta opens.</p>
-        </section>
+        </div>
+        <div class="beta-success" id="betaSuccess">
+            <h3>You're in.</h3>
+            <p>We'll email you when the dashboard beta opens.<br>
+            In the meantime: <a href="mcp-setup.html" style="color:var(--accent);">set up the MCP server</a> and start using governed memory now.</p>
+        </div>
+    </section>
+
+    <script>
+    document.getElementById('betaForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var form = this;
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json' }
+        }).then(function(response) {
+            if (response.ok) {
+                document.getElementById('beta-form-container').style.display = 'none';
+                document.getElementById('betaSuccess').style.display = 'block';
+            }
+        });
+    });
+    </script>
 
 </div>
 
@@ -465,6 +605,7 @@ mem.supersede(old.id, new.id)            <span class="comment"># old points to r
             <a href="https://pypi.org/project/quilmem/">PyPI</a> &middot;
             <a href="quickstart.html">Quickstart</a> &middot;
             <a href="mcp-setup.html">MCP Setup</a> &middot;
+            <a href="troubleshooting.html">Troubleshooting</a> &middot;
             MIT License
         </p>
         <p style="margin-top:8px;">Built by <a href="https://github.com/Thezenmonster">Michael K Onyekwere</a></p>

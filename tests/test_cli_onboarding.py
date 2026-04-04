@@ -75,9 +75,11 @@ class TestInit:
     def test_init_shows_next_steps(self, runner, fresh_db):
         result = runner.invoke(main, ["--db", fresh_db, "init", "--project", "test"])
         assert result.exit_code == 0
-        assert "Next steps:" in result.output
+        assert "Try the differentiators:" in result.output
         assert "agentmem add" in result.output
         assert "agentmem health" in result.output
+        assert "save-session" in result.output
+        assert "load-session" in result.output
 
     def test_init_claude_config(self, runner, fresh_db):
         result = runner.invoke(main, ["--db", fresh_db, "init", "--tool", "claude", "--project", "app"])

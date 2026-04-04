@@ -5,7 +5,7 @@ from .governance import detect_conflicts, detect_stale, health_check, hash_conte
 from .importer import import_markdown
 from .models import MEMORY_TYPES, MEMORY_STATUSES, MemoryRecord
 
-__version__ = "0.2.0"
+__version__ = "0.2.3"
 __all__ = [
     "Memory", "MemoryRecord", "MEMORY_TYPES", "MEMORY_STATUSES",
     "import_markdown",
