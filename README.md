@@ -315,3 +315,5 @@ This isn't theoretical. agentmem was built under production pressure over 2+ mon
 ## License
 
 MIT
+
+<!-- mcp-name: io.github.Thezenmonster/agentmem -->

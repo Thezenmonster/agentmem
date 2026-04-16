@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "quilmem"
-version = "0.2.3"
+version = "0.2.4"
 description = "Trusted memory for long-lived coding agents. SQLite + FTS5. Truth governance built in."
 readme = "README.md"
 license = "MIT"
