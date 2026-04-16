@@ -22,6 +22,10 @@ agentmem init --tool claude --project myapp
 
 That's it. Restart your editor. Your agent now has 13 memory tools. Run `memory_health` to confirm.
 
+<p align="center">
+  <img src="assets/demo.svg" alt="agentmem demo: install, init, health check" width="720">
+</p>
+
 > **Python-only?** `pip install quilmem` works without the MCP extra. See the [Python API](#python-api) below.
 
 ## 60-Second Demo

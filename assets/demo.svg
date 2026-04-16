@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 540" width="720" height="540">
+  <rect width="720" height="540" rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+  <rect width="720" height="32" rx="8" fill="#161b22"/>
+  <rect x="0" y="24" width="720" height="8" fill="#161b22"/>
+  <circle cx="16" cy="16" r="5" fill="#f85149"/>
+  <circle cx="34" cy="16" r="5" fill="#d29922"/>
+  <circle cx="52" cy="16" r="5" fill="#3fb950"/>
+  <text x="360" y="20" text-anchor="middle" font-family="monospace" font-size="12" fill="#8b949e">agentmem demo</text>
+  <text x="20" y="50" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#8b949e" opacity="0">
+    $ 
+    <animate attributeName="opacity" from="0" to="1" begin="0.0s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="36.4" y="50" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#e6edf3" opacity="0">
+    pip install quilmem[mcp]
+    <animate attributeName="opacity" from="0" to="1" begin="0.6s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="68" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#3fb950" opacity="0">
+    Successfully installed quilmem-0.2.3
+    <animate attributeName="opacity" from="0" to="1" begin="1.8s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="104" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#8b949e" opacity="0">
+    $ 
+    <animate attributeName="opacity" from="0" to="1" begin="2.6s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="36.4" y="104" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#e6edf3" opacity="0">
+    agentmem init --tool claude --project myapp
+    <animate attributeName="opacity" from="0" to="1" begin="3.2s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="140" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#3fb950" opacity="0">
+    ✓ Created memory database: ./memory.db
+    <animate attributeName="opacity" from="0" to="1" begin="4.8s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="158" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#3fb950" opacity="0">
+    ✓ Added starter memory
+    <animate attributeName="opacity" from="0" to="1" begin="5.4s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="176" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#3fb950" opacity="0">
+    ✓ Health check: 100/100
+    <animate attributeName="opacity" from="0" to="1" begin="5.9s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="212" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#58a6ff" opacity="0">
+    Add this to .claude/settings.json:
+    <animate attributeName="opacity" from="0" to="1" begin="6.6s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="248" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#d29922" opacity="0">
+      { &quot;mcpServers&quot;: { &quot;agentmem&quot;: {
+    <animate attributeName="opacity" from="0" to="1" begin="7.4s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="266" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#d29922" opacity="0">
+          &quot;command&quot;: &quot;agentmem&quot;,
+    <animate attributeName="opacity" from="0" to="1" begin="7.8s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="284" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#d29922" opacity="0">
+          &quot;args&quot;: [&quot;--db&quot;,&quot;./memory.db&quot;,
+    <animate attributeName="opacity" from="0" to="1" begin="8.2s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="302" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#d29922" opacity="0">
+                  &quot;--project&quot;,&quot;myapp&quot;,&quot;serve&quot;]
+    <animate attributeName="opacity" from="0" to="1" begin="8.5s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="320" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#d29922" opacity="0">
+      }}}
+    <animate attributeName="opacity" from="0" to="1" begin="8.8s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="356" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#58a6ff" opacity="0">
+    Restart your editor. 13 memory tools ready.
+    <animate attributeName="opacity" from="0" to="1" begin="9.6s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="392" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#8b949e" opacity="0">
+    $ 
+    <animate attributeName="opacity" from="0" to="1" begin="11.0s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="36.4" y="392" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#e6edf3" opacity="0">
+    agentmem health
+    <animate attributeName="opacity" from="0" to="1" begin="11.4s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="428" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#e6edf3" opacity="0">
+    Memory Health Report
+    <animate attributeName="opacity" from="0" to="1" begin="12.4s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="446" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#8b949e" opacity="0">
+    ━━━━━━━━━━━━━━━━━━━━
+    <animate attributeName="opacity" from="0" to="1" begin="12.7s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="464" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#3fb950" opacity="0">
+    Health Score:  100/100
+    <animate attributeName="opacity" from="0" to="1" begin="13.0s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="482" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#e6edf3" opacity="0">
+    Total:         1 memory
+    <animate attributeName="opacity" from="0" to="1" begin="13.3s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="500" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#3fb950" opacity="0">
+    Conflicts:     0
+    <animate attributeName="opacity" from="0" to="1" begin="13.6s" dur="0.15s" fill="freeze"/>
+  </text>
+  <text x="20" y="518" font-family="'SF Mono','Fira Code',Consolas,monospace" font-size="13.5" fill="#3fb950" opacity="0">
+    Stale:         0
+    <animate attributeName="opacity" from="0" to="1" begin="13.9s" dur="0.15s" fill="freeze"/>
+  </text>
+  <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.944;0.972;0.994;1" dur="18.0s" repeatCount="indefinite"/>
+</svg>
