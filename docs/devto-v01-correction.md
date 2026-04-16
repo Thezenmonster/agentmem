@@ -1,47 +1,34 @@
-# Dev.to v0.1 Article Correction
+# Dev.to: Delete Old Article, Publish New One
 
-**Article:** https://dev.to/thezenmonster/i-gave-my-ai-coding-assistant-a-memory-it-changed-how-i-work-2jkh
+## Step 1: Delete the old v0.1 article
 
-## What to do
+1. Go to https://dev.to/dashboard
+2. Find **"I gave my AI coding assistant a memory. It changed how I work."**
+3. Click the **...** menu (or Edit > scroll to bottom)
+4. Click **Delete** / **Unpublish**
+5. Confirm
 
-Edit the article on Dev.to (Dashboard > Posts > Edit). Make two changes:
+This article has 0 reactions, 0 comments, and all its CTAs link to `agent-recall` (wrong project). Nothing is lost by deleting it.
 
-### 1. Add this block at the very top of the article body:
+## Step 2: Publish the new article
 
-```markdown
-> **Update (April 2026):** This article describes an earlier version of the project. The tool has since been rebuilt as **agentmem** with governed memory, trust lifecycle, conflict detection, and health scoring.
->
-> **Install:** `pip install quilmem[mcp]`
-> **GitHub:** [github.com/Thezenmonster/agentmem](https://github.com/Thezenmonster/agentmem)
-> **What changed:** [I built memory governance (Dev.to v0.2)](https://dev.to/michael_onyekwere/my-ai-remembered-the-wrong-thing-and-broke-my-build-so-i-built-memory-governance-50b2)
-```
+1. Go to https://dev.to/dashboard
+2. Click **Create Post**
+3. Copy the entire contents of `docs/devto-new-article.md` and paste it into the editor
+4. Dev.to uses the same frontmatter format, so the title, tags, and description will auto-populate
+5. Add a cover image if you have one (optional, the animated SVG from `assets/demo.svg` could work as a screenshot)
+6. Change `published: false` to `published: true` in the frontmatter
+7. Click **Publish**
 
-### 2. Replace the bottom CTA section
+The new article:
+- Title: **"My Claude Code agent stopped forgetting. Here's the 2-minute setup."**
+- Angle: activation story (2-minute setup + what changes), not a governance deep-dive (that's the v0.2 article)
+- All CTAs point to the correct repo (agentmem) and package (quilmem)
+- Includes the copy-paste CLAUDE.md instruction block
+- Tags: ai, productivity, mcp, opensource
 
-Find this:
+## Step 3: Check the v0.2 article is still correct
 
-```
-**npm:** `npx agent-recall`
+The v0.2 article is here: https://dev.to/michael_onyekwere/my-ai-remembered-the-wrong-thing-and-broke-my-build-so-i-built-memory-governance-50b2
 
-**GitHub:** [github.com/Thezenmonster/agent-recall](https://github.com/Thezenmonster/agent-recall)
-
-**Knowledge packs:** [github.com/Thezenmonster/agent-recall-packs](https://github.com/Thezenmonster/agent-recall-packs)
-
-MIT licensed. Three dependencies. Works with any MCP client.
-
-**If your AI assistant forgets everything between sessions, try it. One command.**
-```
-
-Replace with:
-
-```
-**Install:** `pip install quilmem[mcp]`
-
-**Get started:** `agentmem init --tool claude --project myapp`
-
-**GitHub:** [github.com/Thezenmonster/agentmem](https://github.com/Thezenmonster/agentmem)
-
-MIT licensed. Zero infrastructure. Works with Claude Code, Cursor, Codex, Windsurf.
-
-**If your AI assistant forgets everything between sessions, try it. Two commands.**
-```
+Quick check: make sure its CTAs point to `github.com/Thezenmonster/agentmem` and `pip install quilmem`. Codex confirmed this one is correct, but worth a glance.
