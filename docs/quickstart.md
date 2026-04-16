@@ -1,12 +1,21 @@
-# Quickstart: Governed Memory in 5 Minutes
+# Quickstart: Working Memory in 2 Minutes
 
-Go from zero to a governed memory system in one terminal session.
+Go from zero to governed memory in your coding agent.
 
-## 1. Install
+## 1. Install and Initialize
 
 ```bash
-pip install quilmem
+pip install quilmem[mcp]
+agentmem init --tool claude --project myapp
 ```
+
+This creates a memory database, adds a starter memory, and prints the MCP config for your tool. Paste the config into your editor's settings, restart, and your agent has 13 memory tools.
+
+> **Not using MCP?** `pip install quilmem` works for Python-only usage. Skip to [Step 2](#2-create-your-first-memories).
+
+### Verify
+
+Ask your agent to run `memory_health`. If it returns a score, you're connected.
 
 ## 2. Create Your First Memories
 

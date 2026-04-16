@@ -38,7 +38,8 @@ dev = ["pytest>=7.0", "pytest-cov>=4.0"]
 agentmem = "agentmem.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/thezenmonster/agentmem"
+Homepage = "https://thezenmonster.github.io/agentmem/"
+Documentation = "https://thezenmonster.github.io/agentmem/mcp-setup.html"
 Repository = "https://github.com/thezenmonster/agentmem"
 Issues = "https://github.com/thezenmonster/agentmem/issues"
 

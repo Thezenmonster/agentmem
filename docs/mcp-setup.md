@@ -185,6 +185,16 @@ Once connected, your agent has 13 tools:
 
 ---
 
+## Tell Your Agent How to Use Memory
+
+Copy-paste a ready-made instruction block into your `CLAUDE.md`, `.cursorrules`, or `AGENTS.md`:
+
+**[Agent Instructions](agent-instructions.md)** - Session protocol, trust hierarchy, when to search vs add.
+
+This is the difference between "memory is installed" and "memory is actually used."
+
+---
+
 ## Tips
 
 **Start every session** by having your agent call `load_session`. This restores where the last session left off.

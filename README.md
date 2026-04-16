@@ -1,6 +1,6 @@
 # agentmem
 
-Governed memory for long-lived coding agents. Your agent stops forgetting, stops repeating mistakes, and knows what's still true.
+Shared memory for Claude Code, Cursor, and Codex that knows what's still true. Save sessions, catch stale and conflicting rules, and stop your agent from repeating old mistakes.
 
 [![PyPI](https://img.shields.io/pypi/v/quilmem)](https://pypi.org/project/quilmem/)
 [![Python](https://img.shields.io/pypi/pyversions/quilmem)](https://pypi.org/project/quilmem/)
@@ -13,11 +13,16 @@ Your AI coding assistant forgets everything between sessions. It repeats old mis
 
 Most memory tools solve **storage**. agentmem solves **trust**.
 
-## Install
+## Get Started (Claude Code / Cursor / Codex)
 
 ```bash
-pip install quilmem
+pip install quilmem[mcp]
+agentmem init --tool claude --project myapp
 ```
+
+That's it. Restart your editor. Your agent now has 13 memory tools. Run `memory_health` to confirm.
+
+> **Python-only?** `pip install quilmem` works without the MCP extra. See the [Python API](#python-api) below.
 
 ## 60-Second Demo
 
@@ -50,7 +55,11 @@ context = mem.recall("building a narration track", max_tokens=2000)
 # Lifecycle — promote what's proven, deprecate what's not
 mem.promote(hypothesis.id)                # hypothesis -> active -> validated
 mem.deprecate(hypothesis.id, reason="Disproven by data")
-mem.supersede(old.id, new.id)             # old points to replacement
+
+# Supersede: replace an outdated memory with a newer one
+replacement = mem.add(type="decision", title="Use 1-second gaps before CTA",
+        content="Confirmed by A/B test.", status="active")
+mem.supersede(hypothesis.id, replacement.id)  # old points to replacement
 
 # Health check — is your memory system trustworthy?
 from agentmem import health_check
@@ -181,7 +190,8 @@ context = mem.recall("setting up the build", max_tokens=3000)
 # Governance
 mem.promote(record.id)              # hypothesis -> active -> validated
 mem.deprecate(record.id, reason="No longer relevant")
-mem.supersede(old.id, new.id)       # links old to replacement
+replacement = mem.add(type="decision", title="Use v2 approach", content="...")
+mem.supersede(record.id, replacement.id)  # links old to replacement
 
 # Session persistence
 mem.save_session("Working on auth refactor. Blocked on token refresh.")
@@ -244,6 +254,8 @@ pip install quilmem[mcp]
 ```
 
 **MCP tools:** `add_memory`, `search_memory`, `recall_memory`, `update_memory`, `delete_memory`, `list_memories`, `save_session`, `load_session`, `promote_memory`, `deprecate_memory`, `supersede_memory`, `memory_health`, `memory_conflicts`
+
+**Tell your agent how to use memory:** Copy the [agent instructions](docs/agent-instructions.md) into your `CLAUDE.md`, `.cursorrules`, or `AGENTS.md`. This teaches your agent the session protocol, trust hierarchy, and when to search vs add.
 
 ## Typed Memory
 

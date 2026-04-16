@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>agentmem — Governed Memory for Coding Agents</title>
-    <meta name="description" content="Your coding agent stops forgetting, stops repeating mistakes, and knows what's still true. Governed memory with trust, provenance, and conflict detection.">
+    <title>agentmem — Shared Memory for Claude Code, Cursor, and Codex</title>
+    <meta name="description" content="Save sessions, catch stale and conflicting rules, and stop your agent from repeating old mistakes. Governed memory with trust lifecycle, conflict detection, and health scoring.">
     <style>
         :root {
             --bg: #0d1117;
@@ -307,14 +307,15 @@
 
     <!-- Hero -->
     <section class="hero">
-        <h1>Governed memory for<br><span>coding agents</span></h1>
+        <h1>Shared memory for<br><span>Claude Code, Cursor, and Codex</span></h1>
         <p class="subtitle">
-            Your agent should know what is true, what changed, and what to ignore.
+            Save sessions, catch stale and conflicting rules, and stop your agent from repeating old mistakes.
         </p>
-        <div class="install">pip install quilmem</div>
+        <div class="install">pip install quilmem[mcp]</div>
+        <div class="install" style="margin-top:8px; font-size:0.95em;">agentmem init --tool claude --project myapp</div>
         <div class="cta-group">
-            <a href="https://github.com/Thezenmonster/agentmem" class="btn btn-primary">View on GitHub</a>
-            <a href="mcp-setup.html" class="btn btn-secondary">MCP Setup (2 min)</a>
+            <a href="mcp-setup.html" class="btn btn-primary">Get Started in 2 Minutes</a>
+            <a href="https://github.com/Thezenmonster/agentmem" class="btn btn-secondary">GitHub</a>
             <a href="quickstart.html" class="btn btn-secondary">Python Quickstart</a>
         </div>
     </section>
@@ -421,7 +422,10 @@ rule = mem.add(type=<span class="string">"decision"</span>, title=<span class="s
         status=<span class="string">"hypothesis"</span>)
 mem.promote(rule.id)                     <span class="comment"># hypothesis -> active -> validated</span>
 mem.deprecate(rule.id, reason=<span class="string">"Disproven"</span>)
-mem.supersede(old.id, new.id)            <span class="comment"># old points to replacement</span></pre>
+<span class="comment"># Supersede: replace outdated memory with a newer one</span>
+new_rule = mem.add(type=<span class="string">"decision"</span>, title=<span class="string">"Use 1s gaps before CTA"</span>,
+        content=<span class="string">"Confirmed by A/B test."</span>, status=<span class="string">"active"</span>)
+mem.supersede(rule.id, new_rule.id)      <span class="comment"># old points to replacement</span></pre>
     </section>
 
     <!-- Proof -->
@@ -441,7 +445,7 @@ mem.supersede(old.id, new.id)            <span class="comment"># old points to r
                 <div class="label">Repeated bugs</div>
             </div>
             <div class="stat">
-                <div class="num">66</div>
+                <div class="num">84</div>
                 <div class="label">Tests passing</div>
             </div>
         </div>
@@ -544,7 +548,7 @@ mem.supersede(old.id, new.id)            <span class="comment"># old points to r
             Join the beta. Takes 10 seconds.
         </p>
         <div id="beta-form-container">
-            <form class="beta-form" action="https://formspree.io/f/REPLACE_ME" method="POST" id="betaForm">
+            <form class="beta-form" action="https://formspree.io/f/mdapdgjk" method="POST" id="betaForm">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required placeholder="you@example.com">
 
