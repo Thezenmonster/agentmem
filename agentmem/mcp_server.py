@@ -47,13 +47,13 @@ def run_server(db_path: str = "./memory.db", project: str = ""):
             ),
             Tool(
                 name="search_memory",
-                description="Search memories by text query. Returns ranked results.",
+                description="Full-text search across all active memories. Returns results ranked by relevance, trust status, and recency. Deprecated and superseded memories are excluded automatically.",
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string"},
-                        "type": {"type": "string", "enum": list(MEMORY_TYPES)},
-                        "limit": {"type": "integer", "default": 10},
+                        "query": {"type": "string", "description": "Search query. Supports natural language and keywords."},
+                        "type": {"type": "string", "enum": list(MEMORY_TYPES), "description": "Filter results to a specific memory type (bug, decision, setting, procedure, context, feedback, session)"},
+                        "limit": {"type": "integer", "default": 10, "description": "Maximum number of results to return"},
                     },
                     "required": ["query"],
                 },
@@ -72,38 +72,38 @@ def run_server(db_path: str = "./memory.db", project: str = ""):
             ),
             Tool(
                 name="update_memory",
-                description="Update an existing memory by ID.",
+                description="Update the title, content, tags, or confidence of an existing memory. Use when a rule changes, a fix gets refined, or new context applies to an existing memory.",
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "id": {"type": "string"},
-                        "title": {"type": "string"},
-                        "content": {"type": "string"},
-                        "tags": {"type": "array", "items": {"type": "string"}},
-                        "confidence": {"type": "number"},
+                        "id": {"type": "string", "description": "ID of the memory to update"},
+                        "title": {"type": "string", "description": "New title (short summary, max 120 chars)"},
+                        "content": {"type": "string", "description": "New content body"},
+                        "tags": {"type": "array", "items": {"type": "string"}, "description": "New tag list (replaces existing tags)"},
+                        "confidence": {"type": "number", "description": "Confidence score between 0.0 and 1.0"},
                     },
                     "required": ["id"],
                 },
             ),
             Tool(
                 name="delete_memory",
-                description="Delete a memory by ID.",
+                description="Permanently delete a memory by ID. Prefer deprecate_memory for memories that were once true but are no longer. Only delete memories that were created in error or contain incorrect information.",
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "id": {"type": "string"},
+                        "id": {"type": "string", "description": "ID of the memory to permanently delete"},
                     },
                     "required": ["id"],
                 },
             ),
             Tool(
                 name="list_memories",
-                description="List memories, optionally filtered by type.",
+                description="List all memories, optionally filtered by type. Returns memories sorted by most recently created. Use to browse what the memory system knows about a topic or to audit stored rules.",
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "enum": list(MEMORY_TYPES)},
-                        "limit": {"type": "integer", "default": 20},
+                        "type": {"type": "string", "enum": list(MEMORY_TYPES), "description": "Filter to a specific memory type (bug, decision, setting, procedure, context, feedback, session)"},
+                        "limit": {"type": "integer", "default": 20, "description": "Maximum number of memories to return"},
                     },
                 },
             ),

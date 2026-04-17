@@ -8,13 +8,13 @@
     "url": "https://github.com/Thezenmonster/agentmem",
     "source": "github"
   },
-  "version": "0.2.4",
+  "version": "0.2.5",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "quilmem",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "transport": { "type": "stdio" },
       "packageArguments": [
         { "type": "named", "name": "--db", "description": "Path to the SQLite database file", "default": "./memory.db", "isRequired": true },
